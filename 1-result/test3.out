@@ -1,0 +1,46 @@
+C:\prj\io8322\sysprog\lab\1-20-Java-IO-83-Omelyanskyi>PythonCompile test3
+[Compiler  ] [INFO   ] Python compiler
+[Compiler  ] [INFO   ] Source file: test3.py
+[Compiler  ] [INFO   ] Read 2 rows.
+[Compiler  ] [INFO   ] Lexical analyzer starting.
+[Compiler  ] [INFO   ] Lexical analyzer finished OK. [11 lexems]
+TOKEN LIST:
+-----------------------------------------------
+  [1,1][BLOCKINDENT] -> []
+  [1,1][DEF]
+  [1,5][ID] -> [main]
+  [1,9][BKTB]
+  [1,10][BKTE]
+  [1,11][COLON]
+  [2,1][BLOCKINDENT] -> [    ]
+  [2,5][RETURN]
+  [2,12][QUOTE1]
+  [2,13][CONSTCHAR] -> [T]
+  [2,14][QUOTE1]
+-----------------------------------------------
+[Compiler  ] [INFO   ] Syntax analyzer starting.
+[Compiler  ] [INFO   ] Syntax analyzer finished OK.
+SYNTAX TREE:
+-----------------------------------------------
+[STMT_PROGRAM]
+  {function}:
+    [STMT_FUNCTION]
+      {nameFunction}:
+        [EXPR_IDFUNCTION]: "main"
+      {bodyFunction}:
+        [STMT_BLOCK]
+          {bodyBlock}:
+            [STMT_RETURN]
+              {retValue}:
+                [EXPR_CONSTINT]: "84"
+
+-----------------------------------------------
+[Compiler  ] [INFO   ] Generate destination files
+[Compiler  ] [INFO   ] Result file: test3.asm
+[Compiler  ] [INFO   ] Python Compiler finished OK. [ 48 ms]
+
+
+===========================================================
+=== Execution test3.exe
+===========================================================
+84

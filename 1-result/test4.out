@@ -1,0 +1,22 @@
+C:\prj\io8322\sysprog\lab\1-20-Java-IO-83-Omelyanskyi>PythonCompile test4
+[Compiler  ] [INFO   ] Python compiler
+[Compiler  ] [INFO   ] Source file: test4.py
+[Compiler  ] [INFO   ] Read 2 rows.
+[Compiler  ] [INFO   ] Lexical analyzer starting.
+TOKEN LIST:
+-----------------------------------------------
+  [1,1][BLOCKINDENT] -> []
+  [1,1][DEF]
+  [1,5][ID] -> [main]
+  [1,9][BKTB]
+  [1,10][BKTE]
+  [1,11][COLON]
+  [2,1][BLOCKINDENT] -> [    ]
+  [2,5][RETURN]
+  [2,12][QUOTE1]
+  [2,13][CONSTCHAR] -> [T]
+  [2,14][NONE.INVALID] -> [1] // Bad closed quote.
+-----------------------------------------------
+[Lexical   ] [ERROR  ] test4.py[2,14]->[    return 'T1']
+                                             ERR:  Bad closed quote.
+[Compiler  ] [ERROR  ] Python Compiler finished ERROR. [ 31 ms]
