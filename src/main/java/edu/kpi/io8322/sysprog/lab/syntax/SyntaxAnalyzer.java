@@ -98,19 +98,48 @@ public class SyntaxAnalyzer {
         return new Stmt_Return(tokenReturn.getRow(),tokenReturn.getCol(), functionCur, parseExpr());
     }
 
-    public Expr parseExpr() throws CompileException {
-        Token quoteBegin = null;
-        if(tokenCur().getLexType().getType()==LexTypeEnum.QUOTE1 || tokenCur().getLexType().getType()==LexTypeEnum.QUOTE2){
-            quoteBegin = tokenCur();
+    public Expr parseTerm() throws CompileException {
+        if(tokenCur().getLexType().getType()==LexTypeEnum.BKTB){
             tokenNext();
+            Expr expr = parseExpr();
+            if(tokenCur().getLexType().getType()!=LexTypeEnum.BKTE) tokenCur().generateCompileException("Token not \")\".");
+            tokenNext();
+            return expr;
         }
-        Expr_ConstInt expr = new Expr_ConstInt(tokenCur().getRow(), tokenCur().getCol(), tokenCur());
-        tokenNext();
-        if(quoteBegin!=null){
+        if(tokenCur().getLexType().getType()==LexTypeEnum.QUOTE1 || tokenCur().getLexType().getType()==LexTypeEnum.QUOTE2){
+            Token quoteBegin = tokenCur();
+            tokenNext();
+            Expr_ConstInt expr = new Expr_ConstInt(tokenCur().getRow(), tokenCur().getCol(), tokenCur());
+            tokenNext();
             if(tokenCur().getLexType().getType()!=quoteBegin.getLexType().getType()) tokenCur().generateCompileException("Not close quote.");
             tokenNext();
+            return expr;
         }
-        return expr;
+        if(tokenCur().getLexType().getType()==LexTypeEnum.CONSTINT){
+            Expr_ConstInt expr = new Expr_ConstInt(tokenCur().getRow(), tokenCur().getCol(), tokenCur());
+            tokenNext();
+            return expr;
+        }
+        if(tokenCur().getLexType().getType()==LexTypeEnum.NOT){
+            Token token_not = tokenCur();
+            tokenNext();
+            Expr expr = new Expr_UnaryNot(token_not.getRow(), token_not.getCol(), parseExpr());
+            return expr;
+        }
+        tokenCur().generateCompileException("Token not expression.");
+        throw new RuntimeException();
+    }
+
+    public Expr parseExpr() throws CompileException {
+        Expr expr1 = parseTerm();
+        if(tokenPeek(0)!=null){
+            if(tokenCur().getLexType().getType()==LexTypeEnum.PLUS){
+                tokenNext();
+                Expr expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseExpr());
+                return expr;
+            }
+        }
+        return expr1;
     }
 
     public void printTree() {

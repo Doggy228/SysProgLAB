@@ -40,7 +40,8 @@ public class Expr_ConstInt extends Expr_Const {
         buf.append(indent+"["+getType()+"]: \""+value+"\""+System.lineSeparator());
     }
 
-    public String outGetValue(SyntaxAnalyzer prg) throws CompileException, IOException {
-        return ""+value;
+    @Override
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        prg.outWriteln("\tpush dword ptr "+value);
     }
 }
