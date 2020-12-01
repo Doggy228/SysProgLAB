@@ -1,6 +1,8 @@
 package edu.kpi.io8322.sysprog.lab;
 
 import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import edu.kpi.io8322.sysprog.lab.lexical.LexicalAnalyzer;
+import edu.kpi.io8322.sysprog.lab.syntax.SyntaxAnalyzer;
 import lombok.Getter;
 
 import java.io.*;
@@ -9,11 +11,14 @@ import java.util.List;
 
 @Getter
 public class PythonCompiler {
+    private static final String LOG_FORMAT = "[%1$-10s] [%2$-7s] %3$s";
     public static PythonCompiler app;
 
     private String srcname;
     private String dstname;
     private List<String> srclines;
+    private LexicalAnalyzer lexicalAnalyzer;
+    private SyntaxAnalyzer syntaxAnalyzer;
 
     public PythonCompiler(String srcname) {
         this.srcname = srcname;
@@ -47,22 +52,55 @@ public class PythonCompiler {
             }
             return 1;
         }
+        lexicalAnalyzer = new LexicalAnalyzer(srclines);
+        try {
+            lexicalAnalyzer.exec();
+            lexicalAnalyzer.printTokenList();;
+        } catch(CompileException e){
+            lexicalAnalyzer.printTokenList();;
+            logError("Lexical", null, e.toString());
+            return 1;
+        }
+        syntaxAnalyzer = new SyntaxAnalyzer(lexicalAnalyzer.getTokenList());
+        try {
+            syntaxAnalyzer.exec();
+            syntaxAnalyzer.printTree();
+        } catch(CompileException e){
+            syntaxAnalyzer.printTree();
+            logError("Syntax", null, e.toString());
+            return 1;
+        }
+        try {
+            logInfo(null, null, "Generate destination files");
+            StringWriter stringWriter = new StringWriter();
+            BufferedWriter writer = new BufferedWriter(stringWriter);
+            syntaxAnalyzer.execOut(writer);
+            writer.close();
+            String bodyResultFile = new String(stringWriter.getBuffer());
+            BufferedWriter writerFile = new BufferedWriter(new FileWriter(dstname));
+            writerFile.write(bodyResultFile);
+            writerFile.close();
+        } catch (Throwable e){
+            logError("Generator", null, e.toString());
+            return 1;
+        }
+        logInfo(null, null, "Result file: " + dstname);
         return 0;
     }
 
     public void logInfo(String sourceClass, String sourceMethod, String msg) {
         if (sourceClass == null) {
-//            logger.logp(Level.INFO, "Compiler", sourceMethod, msg);
+            System.out.println(String.format(LOG_FORMAT, "Compiler", "INFO", msg));
         } else {
-//            logger.logp(Level.INFO, sourceClass, sourceMethod, msg);
+            System.out.println(String.format(LOG_FORMAT, sourceClass, "INFO", msg));
         }
     }
 
     public void logError(String sourceClass, String sourceMethod, String msg) {
         if (sourceClass == null) {
-//            logger.logp(Level.SEVERE, "Compiler", sourceMethod, msg);
+            System.out.println(String.format(LOG_FORMAT, "Compiler", "ERROR", msg));
         } else {
-//            logger.logp(Level.SEVERE, sourceClass, sourceMethod, msg);
+            System.out.println(String.format(LOG_FORMAT, sourceClass, "ERROR", msg));
         }
     }
 
