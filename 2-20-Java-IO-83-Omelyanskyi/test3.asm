@@ -17,7 +17,30 @@ start:
 	invoke StdOut,eax
 	invoke ExitProcess,0
 main PROC
-	mov ebx,
+	push edx
+	push edx
+	push dword ptr 47
+	push dword ptr 84
+	pop edx
+	pop eax
+	add eax,edx
+	pop edx
+	push eax
+	push dword ptr 0
+	pop eax
+	cmp eax,0
+	je L1
+	push dword ptr 0
+	jmp L2
+L1:
+	push dword ptr 1
+L2:
+	pop edx
+	pop eax
+	add eax,edx
+	pop edx
+	push eax
+	pop ebx
 	ret
 main ENDP
 NumbToStr PROC uses ebx x:DWORD,buffer:DWORD

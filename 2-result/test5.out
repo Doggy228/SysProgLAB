@@ -1,0 +1,30 @@
+C:\prj\io8322\sysprog\lab\2-20-Java-IO-83-Omelyanskyi>PythonCompile.bat test5
+[Compiler  ] [INFO   ] Python compiler
+[Compiler  ] [INFO   ] Source file: test5.py
+[Compiler  ] [INFO   ] Read 2 rows.
+[Compiler  ] [INFO   ] Lexical analyzer starting.
+[Compiler  ] [INFO   ] Lexical analyzer finished OK. [12 lexems]
+TOKEN LIST:
+-----------------------------------------------
+  [1,1][BLOCKINDENT] -> []
+  [1,1][DEF]
+  [1,5][ID] -> [main]
+  [1,9][BKTB]
+  [1,10][BKTE]
+  [1,11][COLON]
+  [2,1][BLOCKINDENT] -> [    ]
+  [2,5][RETURN]
+  [2,12][CONSTINT] -> [2]
+  [2,13][PLUS]
+  [2,14][PLUS]
+  [2,15][CONSTINT] -> [0x2F]
+-----------------------------------------------
+[Compiler  ] [INFO   ] Syntax analyzer starting.
+SYNTAX TREE:
+-----------------------------------------------
+[STMT_PROGRAM]
+
+-----------------------------------------------
+[Syntax    ] [ERROR  ] test5.py[2,14]->[    return 2++0x2F]
+                                             ERR:  Token not expression.
+[Compiler  ] [ERROR  ] Python Compiler finished ERROR. [ 31 ms]
