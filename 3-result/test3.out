@@ -1,0 +1,68 @@
+c:\prj\io8322\sysprog\lab\3-20-Java-IO-83-Omelyanskyi>PythonCompile test3
+[Compiler  ] [INFO   ] Python compiler
+[Compiler  ] [INFO   ] Source file: test3.py
+[Compiler  ] [INFO   ] Read 3 rows.
+[Compiler  ] [INFO   ] Lexical analyzer starting.
+[Compiler  ] [INFO   ] Lexical analyzer finished OK. [17 lexems]
+TOKEN LIST:
+-----------------------------------------------
+  [1,1][BLOCKINDENT] -> []
+  [1,1][DEF]
+  [1,5][ID] -> [main]
+  [1,9][BKTB]
+  [1,10][BKTE]
+  [1,11][COLON]
+  [2,1][BLOCKINDENT] -> [    ]
+  [2,5][ID] -> [a]
+  [2,7][EQUAL]
+  [2,9][QUOTE2]
+  [2,10][CONSTSTR] -> [128]
+  [2,13][QUOTE2]
+  [3,1][BLOCKINDENT] -> [    ]
+  [3,5][RETURN]
+  [3,12][ID] -> [a]
+  [3,13][MINUS]
+  [3,14][CONSTINT] -> [28]
+-----------------------------------------------
+[Compiler  ] [INFO   ] Syntax analyzer starting.
+[Compiler  ] [INFO   ] Syntax analyzer finished OK.
+SYNTAX TREE:
+-----------------------------------------------
+[STMT_PROGRAM]
+  {function}:
+    [STMT_FUNCTION]
+      {nameFunction}:
+        [EXPR_IDFUNCTION]: "main"
+      {bodyFunction}:
+        [STMT_BLOCK]
+          {bodyBlock}:
+            [STMT_SEQ]
+              {stmt1}:
+                [STMT_SET]
+                  {varName}:
+                    [EXPR_IDVAR]: "a"
+                  {varValue}:
+                    [EXPR_CONSTINT]: "128"
+              {stmt2}:
+                [STMT_SEQ]
+                  {stmt1}:
+                    [STMT_RETURN]
+                      {retValue}:
+                        [EXPR_BINARYMINUS]:
+                          {expr1}:
+                            [EXPR_GETVARVALUE]:
+                              [EXPR_IDVAR]: "a"
+                          {expr2}:
+                            [EXPR_CONSTINT]: "28"
+
+-----------------------------------------------
+[Compiler  ] [INFO   ] Generate destination files
+[Compiler  ] [INFO   ] Result file: test3.asm
+[Compiler  ] [INFO   ] Python Compiler finished OK. [ 51 ms]
+
+
+===========================================================
+=== Execution test3.exe
+===========================================================
+100
+

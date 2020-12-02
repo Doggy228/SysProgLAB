@@ -1,0 +1,97 @@
+c:\prj\io8322\sysprog\lab\3-20-Java-IO-83-Omelyanskyi>PythonCompile test2
+[Compiler  ] [INFO   ] Python compiler
+[Compiler  ] [INFO   ] Source file: test2.py
+[Compiler  ] [INFO   ] Read 4 rows.
+[Compiler  ] [INFO   ] Lexical analyzer starting.
+[Compiler  ] [INFO   ] Lexical analyzer finished OK. [25 lexems]
+TOKEN LIST:
+-----------------------------------------------
+  [1,1][BLOCKINDENT] -> []
+  [1,1][DEF]
+  [1,5][ID] -> [main]
+  [1,9][BKTB]
+  [1,10][BKTE]
+  [1,11][COLON]
+  [2,1][BLOCKINDENT] -> [    ]
+  [2,5][ID] -> [a]
+  [2,7][EQUAL]
+  [2,9][CONSTINT] -> [5]
+  [2,10][PLUS]
+  [2,11][CONSTINT] -> [3]
+  [3,1][BLOCKINDENT] -> [    ]
+  [3,5][ID] -> [b]
+  [3,7][EQUAL]
+  [3,9][ID] -> [a]
+  [3,10][MINUS]
+  [3,11][CONSTINT] -> [2]
+  [4,1][BLOCKINDENT] -> [    ]
+  [4,5][RETURN]
+  [4,12][ID] -> [a]
+  [4,13][PLUS]
+  [4,14][ID] -> [b]
+  [4,15][MINUS]
+  [4,16][CONSTINT] -> [1]
+-----------------------------------------------
+[Compiler  ] [INFO   ] Syntax analyzer starting.
+[Compiler  ] [INFO   ] Syntax analyzer finished OK.
+SYNTAX TREE:
+-----------------------------------------------
+[STMT_PROGRAM]
+  {function}:
+    [STMT_FUNCTION]
+      {nameFunction}:
+        [EXPR_IDFUNCTION]: "main"
+      {bodyFunction}:
+        [STMT_BLOCK]
+          {bodyBlock}:
+            [STMT_SEQ]
+              {stmt1}:
+                [STMT_SET]
+                  {varName}:
+                    [EXPR_IDVAR]: "a"
+                  {varValue}:
+                    [EXPR_BINARYPLUS]:
+                      {expr1}:
+                        [EXPR_CONSTINT]: "5"
+                      {expr2}:
+                        [EXPR_CONSTINT]: "3"
+              {stmt2}:
+                [STMT_SEQ]
+                  {stmt1}:
+                    [STMT_SET]
+                      {varName}:
+                        [EXPR_IDVAR]: "b"
+                      {varValue}:
+                        [EXPR_BINARYMINUS]:
+                          {expr1}:
+                            [EXPR_GETVARVALUE]:
+                              [EXPR_IDVAR]: "a"
+                          {expr2}:
+                            [EXPR_CONSTINT]: "2"
+                  {stmt2}:
+                    [STMT_SEQ]
+                      {stmt1}:
+                        [STMT_RETURN]
+                          {retValue}:
+                            [EXPR_BINARYPLUS]:
+                              {expr1}:
+                                [EXPR_GETVARVALUE]:
+                                  [EXPR_IDVAR]: "a"
+                              {expr2}:
+                                [EXPR_BINARYMINUS]:
+                                  {expr1}:
+                                    [EXPR_GETVARVALUE]:
+                                      [EXPR_IDVAR]: "b"
+                                  {expr2}:
+                                    [EXPR_CONSTINT]: "1"
+
+-----------------------------------------------
+[Compiler  ] [INFO   ] Generate destination files
+[Compiler  ] [INFO   ] Result file: test2.asm
+[Compiler  ] [INFO   ] Python Compiler finished OK. [ 52 ms]
+
+
+===========================================================
+=== Execution test2.exe
+===========================================================
+13
