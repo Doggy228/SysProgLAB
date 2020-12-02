@@ -14,6 +14,7 @@ public class Expr_ConstInt extends Expr_Const {
         super(row, col);
         switch (token.getLexType().getType()) {
             case CONSTINT:
+            case CONSTSTR:
                 try {
                     if (token.getValue().startsWith("0x")) {
                         value = Integer.parseInt(token.getValue().substring(2), 16);

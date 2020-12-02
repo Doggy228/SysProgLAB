@@ -30,6 +30,7 @@ public class Stmt_Return extends Stmt {
     public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
         retValue.outPushValue(prg);
         prg.outWriteln("\tpop ebx");
+        stmtFunction.getBody().getEnv().genFreeMem(prg, stmtFunction.getBody().getEnv());
         prg.outWriteln("\tret");
     }
 

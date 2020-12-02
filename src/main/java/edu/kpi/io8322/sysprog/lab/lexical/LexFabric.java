@@ -24,6 +24,10 @@ public class LexFabric {
         lexTypeMap.put(LexTypeEnum.ID, new LexType_id());
         lexTypeMap.put(LexTypeEnum.NOT, new LexType_not());
         lexTypeMap.put(LexTypeEnum.PLUS, new LexType_plus());
+        lexTypeMap.put(LexTypeEnum.MINUS, new LexType_minus());
+        lexTypeMap.put(LexTypeEnum.EQUAL, new LexType_equal());
+        lexTypeMap.put(LexTypeEnum.LESS, new LexType_less());
+        lexTypeMap.put(LexTypeEnum.CONSTSTR, new LexType_conststr());
 
         lexTypeSymbMap = new HashMap<>();
         lexTypeSymbMap.put(Character.valueOf('('), (LexType_symb) getLexType(LexTypeEnum.BKTB));
@@ -32,6 +36,9 @@ public class LexFabric {
         lexTypeSymbMap.put(Character.valueOf('\''), (LexType_symb) getLexType(LexTypeEnum.QUOTE1));
         lexTypeSymbMap.put(Character.valueOf('\"'), (LexType_symb) getLexType(LexTypeEnum.QUOTE2));
         lexTypeSymbMap.put(Character.valueOf('+'), (LexType_symb) getLexType(LexTypeEnum.PLUS));
+        lexTypeSymbMap.put(Character.valueOf('-'), (LexType_symb) getLexType(LexTypeEnum.MINUS));
+        lexTypeSymbMap.put(Character.valueOf('='), (LexType_symb) getLexType(LexTypeEnum.EQUAL));
+        lexTypeSymbMap.put(Character.valueOf('<'), (LexType_symb) getLexType(LexTypeEnum.LESS));
 
         lexTypeKeywordMap = new HashMap<>();
         lexTypeKeywordMap.put("def", (LexType_keyword) getLexType(LexTypeEnum.DEF));

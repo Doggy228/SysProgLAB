@@ -7,18 +7,17 @@ import edu.kpi.io8322.sysprog.lab.lexical.Token;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SyntaxAnalyzer {
     private List<Token> tokenList;
     private Stmt_Program root;
     private int tokenIndexCur;
-    private Map<Stmt, String> blockIndentMap;
     private Stmt_Function functionCur;
+    private Deque<Stmt_Block> blockStack;
     private int labelIndexCur;
     private Writer out;
+    private Env env;
 
     public SyntaxAnalyzer(List<Token> tokenList) {
         this.tokenList = tokenList;
@@ -44,15 +43,25 @@ public class SyntaxAnalyzer {
         tokenIndexCur++;
     }
 
+    public Env newEnv() {
+        env = new Env(env);
+        return env;
+    }
+
+    public Env restorePrevEnv() {
+        env = env.getPrev();
+        return env;
+    }
+
     public void exec() throws CompileException {
         PythonCompiler.app.logInfo(null, null, "Syntax analyzer starting.");
         tokenIndexCur = 0;
-        blockIndentMap = new HashMap<>();
         functionCur = null;
+        blockStack = new ArrayDeque<>();
+        env = null;
         root = new Stmt_Program();
         if (tokenCur().getLexType().getType() != LexTypeEnum.BLOCKINDENT)
             tokenCur().generateCompileException("Token not block indent.");
-        blockIndentMap.put(root, tokenCur().getValue());
         tokenNext();
         root.setStmtFunction(parseFunction());
         if(tokenPeek(0)!=null) tokenCur().generateCompileException("Bad token");
@@ -67,6 +76,7 @@ public class SyntaxAnalyzer {
         Expr_IdFunction nameFunction = new Expr_IdFunction(tokenCur());
         Stmt_Function stmtFunction = new Stmt_Function(tokenDef.getRow(), tokenDef.getCol(), nameFunction);
         functionCur = stmtFunction;
+        blockStack.clear();
         tokenNext();
         if(tokenCur().getLexType().getType()!=LexTypeEnum.BKTB) tokenCur().generateCompileException("Not symbol \"(\".");
         tokenNext();
@@ -76,27 +86,56 @@ public class SyntaxAnalyzer {
         tokenNext();
         stmtFunction.setBody(parseBlock());
         functionCur = null;
+        blockStack.clear();
         return stmtFunction;
     }
 
     public Stmt_Block parseBlock() throws CompileException {
         if (tokenCur().getLexType().getType() != LexTypeEnum.BLOCKINDENT)
             tokenCur().generateCompileException("Token not block indent.");
-        Stmt_Block stmt_block = new Stmt_Block(tokenCur().getRow(), tokenCur().getCol());
-        blockIndentMap.put(stmt_block, tokenCur().getValue());
-        tokenNext();
-        stmt_block.setBody(parseReturn());
-        blockIndentMap.remove(stmt_block);
+        Stmt_Block stmt_block = new Stmt_Block(tokenCur().getRow(), tokenCur().getCol(), newEnv(), tokenCur().getValue());
+        blockStack.addFirst(stmt_block);
+        stmt_block.setBody(parseSeq());
+        blockStack.removeFirst();
         return stmt_block;
     }
 
-    public Stmt_Return parseReturn() throws CompileException {
+    public Stmt_Seq parseSeq() throws CompileException {
+        if(tokenPeek(0)==null) return null;
+        if (tokenCur().getLexType().getType() != LexTypeEnum.BLOCKINDENT)
+            tokenCur().generateCompileException("Token not block indent.");
+        if(!tokenCur().getValue().equals(blockStack.peekFirst().getBlockIndent())) return null;
+        tokenNext();
+        return new Stmt_Seq(tokenCur().getRow(), tokenCur().getCol(), parseStmt(),parseSeq());
+    }
+
+    public Stmt parseStmt() throws CompileException {
+        if(tokenCur().getLexType().getType()==LexTypeEnum.RETURN) return parseReturn();
+        if(tokenCur().getLexType().getType()==LexTypeEnum.ID) return parseIdLeft();
+        tokenCur().generateCompileException("Token not statement.");
+        return null;
+    }
+
+    public Stmt parseReturn() throws CompileException {
         Token tokenReturn = tokenCur();
-        if (tokenReturn.getLexType().getType() != LexTypeEnum.RETURN)
-            tokenReturn.generateCompileException("Token not keyword \"return\".");
         if(functionCur==null) tokenReturn.generateCompileException("Return without function.");
         tokenNext();
         return new Stmt_Return(tokenReturn.getRow(),tokenReturn.getCol(), functionCur, parseExpr());
+    }
+
+    public Stmt parseIdLeft() throws CompileException {
+        Token tokenId = tokenCur();
+        if(tokenPeek(1)==null || tokenPeek(1).getLexType().getType()!=LexTypeEnum.EQUAL){
+            tokenId.generateCompileException("Not found symbol \".");
+        }
+        Expr_IdVar varName = env.getVar(tokenId.getValue());
+        if(varName==null){
+            varName = new Expr_IdVar(tokenId);
+            env.putVar(varName);
+        }
+        tokenNext();
+        tokenNext();
+        return new Stmt_Set(tokenId.getRow(), tokenId.getCol(), varName, parseExpr());
     }
 
     public Expr parseTerm() throws CompileException {
@@ -127,16 +166,40 @@ public class SyntaxAnalyzer {
             Expr expr = new Expr_UnaryNot(token_not.getRow(), token_not.getCol(), parseExpr());
             return expr;
         }
+        if(tokenCur().getLexType().getType()==LexTypeEnum.ID){
+            Expr_IdVar varName = env.getVar(tokenCur().getValue());
+            if(varName==null) tokenCur().generateCompileException("Variable \""+tokenCur().getValue()+"\" not defined.");
+            Expr expr = new Expr_GetVarValue(tokenCur().getRow(), tokenCur().getCol(), varName);
+            tokenNext();
+            return expr;
+        }
         tokenCur().generateCompileException("Token not expression.");
         throw new RuntimeException();
     }
 
     public Expr parseExpr() throws CompileException {
+        Expr expr1 = parseExprPrior2();
+        if(tokenPeek(0)!=null){
+            if(tokenCur().getLexType().getType()==LexTypeEnum.LESS){
+                tokenNext();
+                Expr expr = new Expr_BinaryLess(expr1.getRow(), expr1.getCol(), expr1, parseExpr());
+                return expr;
+            }
+        }
+        return expr1;
+    }
+
+    public Expr parseExprPrior2() throws CompileException {
         Expr expr1 = parseTerm();
         if(tokenPeek(0)!=null){
             if(tokenCur().getLexType().getType()==LexTypeEnum.PLUS){
                 tokenNext();
-                Expr expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseExpr());
+                Expr expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior2());
+                return expr;
+            }
+            if(tokenCur().getLexType().getType()==LexTypeEnum.MINUS){
+                tokenNext();
+                Expr expr = new Expr_BinaryMinus(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior2());
                 return expr;
             }
         }
