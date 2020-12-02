@@ -180,9 +180,13 @@ public class SyntaxAnalyzer {
     public Expr parseExpr() throws CompileException {
         Expr expr1 = parseExprPrior2();
         if(tokenPeek(0)!=null){
-            if(tokenCur().getLexType().getType()==LexTypeEnum.LESS){
+            if(tokenCur().getLexType().getType()==LexTypeEnum.IF){
                 tokenNext();
-                Expr expr = new Expr_BinaryLess(expr1.getRow(), expr1.getCol(), expr1, parseExpr());
+                Expr cond = parseExprPrior2();
+                if(tokenCur().getLexType().getType()!=LexTypeEnum.ELSE)
+                    tokenCur().generateCompileException("Token not \"else\".");
+                tokenNext();
+                Expr expr = new Expr_Ternary(expr1.getRow(), expr1.getCol(), expr1, cond, parseExpr());
                 return expr;
             }
         }
@@ -190,16 +194,28 @@ public class SyntaxAnalyzer {
     }
 
     public Expr parseExprPrior2() throws CompileException {
+        Expr expr1 = parseExprPrior3();
+        if(tokenPeek(0)!=null){
+            if(tokenCur().getLexType().getType()==LexTypeEnum.LESS){
+                tokenNext();
+                Expr expr = new Expr_BinaryLess(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior2());
+                return expr;
+            }
+        }
+        return expr1;
+    }
+
+    public Expr parseExprPrior3() throws CompileException {
         Expr expr1 = parseTerm();
         if(tokenPeek(0)!=null){
             if(tokenCur().getLexType().getType()==LexTypeEnum.PLUS){
                 tokenNext();
-                Expr expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior2());
+                Expr expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior3());
                 return expr;
             }
             if(tokenCur().getLexType().getType()==LexTypeEnum.MINUS){
                 tokenNext();
-                Expr expr = new Expr_BinaryMinus(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior2());
+                Expr expr = new Expr_BinaryMinus(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior3());
                 return expr;
             }
         }

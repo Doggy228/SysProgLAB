@@ -23,13 +23,12 @@ public class Expr_BinaryLess extends Expr_Binary {
         int labelTrue = prg.newLabel();
         prg.outWriteln("\tcmp eax,edx");
         prg.outWriteln("\tpop edx");
-        prg.outWriteln("\tjl "+prg.strLabel(labelTrue));
+        prg.outWriteln("\tjl " + prg.strLabel(labelTrue));
         int labelAfter = prg.newLabel();
         prg.outWriteln("\tpush dword ptr 0");
-        prg.outWriteln("\tjmp "+prg.strLabel(labelAfter));
+        prg.outWriteln("\tjmp " + prg.strLabel(labelAfter));
         prg.outWriteLabel(labelTrue);
         prg.outWriteln("\tpush dword ptr 1");
         prg.outWriteLabel(labelAfter);
     }
-
 }
