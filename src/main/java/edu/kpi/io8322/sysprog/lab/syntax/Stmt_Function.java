@@ -48,9 +48,9 @@ public class Stmt_Function extends Stmt {
     public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
         StringBuilder sb = new StringBuilder(name.getName()+" PROC");
         if(!params.isEmpty()){
-            sb.append(" uses "+params.get(0).getName()+":DWORD");
+            sb.append(" p_"+params.get(0).getName()+":DWORD");
             for(int i=1;i<params.size();i++){
-                sb.append(","+params.get(i).getName()+":DWORD");
+                sb.append(",p_"+params.get(i).getName()+":DWORD");
             }
         }
         prg.outWriteln(sb.toString());

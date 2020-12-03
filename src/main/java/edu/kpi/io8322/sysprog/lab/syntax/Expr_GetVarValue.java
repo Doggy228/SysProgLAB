@@ -25,7 +25,7 @@ public class Expr_GetVarValue extends Expr {
     public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
         switch (varName.getType()) {
             case EXPR_IDVARFUNC:
-                prg.outWriteln("\tmov eax,"+varName.getName());
+                prg.outWriteln("\tmov eax,p_"+varName.getName());
                 break;
             default:
                 prg.outWriteln("\tmov eax,[ebp-" + varName.getMemOffset() + "]");

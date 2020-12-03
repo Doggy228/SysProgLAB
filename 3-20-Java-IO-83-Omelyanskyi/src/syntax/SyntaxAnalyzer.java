@@ -191,16 +191,27 @@ public class SyntaxAnalyzer {
 
     public Expr parseExprPrior2() throws CompileException {
         Expr expr1 = parseTerm();
-        if(tokenPeek(0)!=null){
-            if(tokenCur().getLexType().getType()==LexTypeEnum.PLUS){
+        if (tokenPeek(0) != null) {
+            Expr expr = null;
+            if (tokenCur().getLexType().getType() == LexTypeEnum.PLUS) {
                 tokenNext();
-                Expr expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior2());
-                return expr;
+                expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseTerm());
+            } else if (tokenCur().getLexType().getType() == LexTypeEnum.MINUS) {
+                tokenNext();
+                expr = new Expr_BinaryMinus(expr1.getRow(), expr1.getCol(), expr1, parseTerm());
             }
-            if(tokenCur().getLexType().getType()==LexTypeEnum.MINUS){
-                tokenNext();
-                Expr expr = new Expr_BinaryMinus(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior2());
-                return expr;
+            if(expr!=null){
+                if(tokenPeek(0)==null) return expr;
+                switch(tokenCur().getLexType().getType()){
+                    case PLUS:
+                        tokenNext();
+                        return new Expr_BinaryPlus(expr.getRow(), expr.getCol(), expr, parseExprPrior2());
+                    case MINUS:
+                        tokenNext();
+                        return new Expr_BinaryMinus(expr.getRow(), expr.getCol(), expr, parseExprPrior2());
+                    default:
+                        return expr;
+                }
             }
         }
         return expr1;

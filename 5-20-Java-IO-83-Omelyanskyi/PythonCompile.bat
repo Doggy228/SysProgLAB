@@ -3,7 +3,7 @@
 @rem ***  Usage: PythonCompile <file_name_without_extension>
 @rem ************************************************************
 
-@java -jar io8322-sysprog-lab-1.0.0.jar %1.py
+@java -jar ../build/libs/io8322-sysprog-lab-1.0.0.jar %1.py
 @if %errorlevel% neq 0 exit /B %errorlevel%
 @echo.
 @\masm32\bin\ml /c /coff /Cp %1.asm

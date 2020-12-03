@@ -17,6 +17,6 @@ public class Expr_IdVarFunc extends Expr_IdVar {
     @Override
     public void genSave(SyntaxAnalyzer prg) throws CompileException, IOException {
         prg.outWriteln("\tpop eax");
-        prg.outWriteln("\tmov "+getName()+",eax");
+        prg.outWriteln("\tmov p_"+getName()+",eax");
     }
 }

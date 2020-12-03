@@ -59,27 +59,14 @@ L3:
 L4:
 func_sub ENDP
 main PROC
-	push ebp
-	mov ebp,esp
-	sub esp,8
 L5:
-	push dword ptr 5
-	pop eax
-	mov [ebp-4],eax
-	push dword ptr 1
-	pop eax
-	mov [ebp-8],eax
-	push edx
-	mov eax,[ebp-8]
-	push eax
 	push edx
 	mov edx,777
 	push ebx
 	push ecx
 	push edx
-	push dword ptr 4
-	mov eax,[ebp-4]
-	push eax
+	push dword ptr 20
+	push dword ptr 10
 	call func_add
 	mov eax,ebx
 	pop edx
@@ -90,9 +77,8 @@ L5:
 	push ebx
 	push ecx
 	push edx
-	mov eax,[ebp-4]
-	push eax
-	push dword ptr 1
+	push dword ptr 2
+	push dword ptr 3
 	push dword ptr 8
 	call func_sub
 	mov eax,ebx
@@ -102,25 +88,12 @@ L5:
 	push eax
 	pop edx
 	pop eax
-	sub eax,edx
-	pop edx
-	push eax
-	pop edx
-	pop eax
 	add eax,edx
 	pop edx
 	push eax
-	pop eax
-	mov [ebp-8],eax
-	mov eax,[ebp-8]
-	push eax
 	pop ebx
-	mov esp,ebp
-	pop ebp
 	ret
 L6:
-	mov esp,ebp
-	pop ebp
 main ENDP
 NumbToStr PROC uses ebx x:DWORD,buffer:DWORD
 	mov ecx,buffer

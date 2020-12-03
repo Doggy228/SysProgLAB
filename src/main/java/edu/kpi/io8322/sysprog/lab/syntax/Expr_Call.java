@@ -42,9 +42,7 @@ public class Expr_Call extends Expr {
             values.get(i).outPushValue(prg);
         }
         prg.outWriteln("\tcall "+func.getName().getName());
-        if(!values.isEmpty()){
-            prg.outWriteln("\tadd esp,"+(values.size()*4));
-        }
+        prg.outWriteln("\tmov eax,ebx");
         prg.outWriteln("\tpop edx");
         prg.outWriteln("\tpop ecx");
         prg.outWriteln("\tpop ebx");
