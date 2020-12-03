@@ -30,6 +30,7 @@ public class LexFabric {
         lexTypeMap.put(LexTypeEnum.CONSTSTR, new LexType_conststr());
         lexTypeMap.put(LexTypeEnum.IF, new LexType_if());
         lexTypeMap.put(LexTypeEnum.ELSE, new LexType_else());
+        lexTypeMap.put(LexTypeEnum.COMMA, new LexType_comma());
 
         lexTypeSymbMap = new HashMap<>();
         lexTypeSymbMap.put(Character.valueOf('('), (LexType_symb) getLexType(LexTypeEnum.BKTB));
@@ -41,6 +42,7 @@ public class LexFabric {
         lexTypeSymbMap.put(Character.valueOf('-'), (LexType_symb) getLexType(LexTypeEnum.MINUS));
         lexTypeSymbMap.put(Character.valueOf('='), (LexType_symb) getLexType(LexTypeEnum.EQUAL));
         lexTypeSymbMap.put(Character.valueOf('<'), (LexType_symb) getLexType(LexTypeEnum.LESS));
+        lexTypeSymbMap.put(Character.valueOf(','), (LexType_symb) getLexType(LexTypeEnum.COMMA));
 
         lexTypeKeywordMap = new HashMap<>();
         lexTypeKeywordMap.put("def", (LexType_keyword) getLexType(LexTypeEnum.DEF));

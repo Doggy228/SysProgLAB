@@ -23,7 +23,14 @@ public class Expr_GetVarValue extends Expr {
 
     @Override
     public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
-        prg.outWriteln("\tmov eax,[ebp-" + varName.getMemOffset() + "]");
+        switch (varName.getType()) {
+            case EXPR_IDVARFUNC:
+                prg.outWriteln("\tmov eax,"+varName.getName());
+                break;
+            default:
+                prg.outWriteln("\tmov eax,[ebp-" + varName.getMemOffset() + "]");
+                break;
+        }
         prg.outWriteln("\tpush eax");
     }
 
