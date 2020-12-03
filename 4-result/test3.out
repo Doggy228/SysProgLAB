@@ -1,0 +1,38 @@
+C:\prj\io8322\sysprog\lab\4-20-Java-IO-83-Omelyanskyi>PythonCompile.bat test3
+[Compiler  ] [INFO   ] Python compiler
+[Compiler  ] [INFO   ] Source file: test3.py
+[Compiler  ] [INFO   ] Read 4 rows.
+[Compiler  ] [INFO   ] Lexical analyzer starting.
+[Compiler  ] [INFO   ] Lexical analyzer finished OK. [20 lexems]
+TOKEN LIST:
+-----------------------------------------------
+  [1,1][BLOCKINDENT] -> []
+  [1,1][DEF]
+  [1,5][ID] -> [main]
+  [1,9][BKTB]
+  [1,10][BKTE]
+  [1,11][COLON]
+  [2,1][BLOCKINDENT] -> [    ]
+  [2,5][ID] -> [a]
+  [2,7][EQUAL]
+  [2,9][CONSTINT] -> [5]
+  [3,1][BLOCKINDENT] -> [    ]
+  [3,5][ID] -> [b]
+  [3,7][EQUAL]
+  [3,9][CONSTINT] -> [3]
+  [3,11][IF]
+  [3,14][CONSTINT] -> [7]
+  [3,16][CONSTINT] -> [5]
+  [4,1][BLOCKINDENT] -> [    ]
+  [4,5][RETURN]
+  [4,12][ID] -> [b]
+-----------------------------------------------
+[Compiler  ] [INFO   ] Syntax analyzer starting.
+SYNTAX TREE:
+-----------------------------------------------
+[STMT_PROGRAM]
+
+-----------------------------------------------
+[Syntax    ] [ERROR  ] test3.py[3,16]->[    b = 3 if 7 5 ]
+                                             ERR:  Token not "else".
+[Compiler  ] [ERROR  ] Python Compiler finished ERROR. [ 47 ms]
