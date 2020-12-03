@@ -1,4 +1,5 @@
-c:\prj\io8322\sysprog\lab\3-20-Java-IO-83-Omelyanskyi>PythonCompile test2
+
+C:\prj\io8322\sysprog\lab\3-20-Java-IO-83-Omelyanskyi>PythonCompile.bat test2
 [Compiler  ] [INFO   ] Python compiler
 [Compiler  ] [INFO   ] Source file: test2.py
 [Compiler  ] [INFO   ] Read 4 rows.
@@ -73,25 +74,26 @@ SYNTAX TREE:
                       {stmt1}:
                         [STMT_RETURN]
                           {retValue}:
-                            [EXPR_BINARYPLUS]:
+                            [EXPR_BINARYMINUS]:
                               {expr1}:
-                                [EXPR_GETVARVALUE]:
-                                  [EXPR_IDVAR]: "a"
-                              {expr2}:
-                                [EXPR_BINARYMINUS]:
+                                [EXPR_BINARYPLUS]:
                                   {expr1}:
                                     [EXPR_GETVARVALUE]:
-                                      [EXPR_IDVAR]: "b"
+                                      [EXPR_IDVAR]: "a"
                                   {expr2}:
-                                    [EXPR_CONSTINT]: "1"
+                                    [EXPR_GETVARVALUE]:
+                                      [EXPR_IDVAR]: "b"
+                              {expr2}:
+                                [EXPR_CONSTINT]: "1"
 
 -----------------------------------------------
 [Compiler  ] [INFO   ] Generate destination files
 [Compiler  ] [INFO   ] Result file: test2.asm
-[Compiler  ] [INFO   ] Python Compiler finished OK. [ 52 ms]
+[Compiler  ] [INFO   ] Python Compiler finished OK. [ 32 ms]
 
 
 ===========================================================
 === Execution test2.exe
 ===========================================================
 13
+

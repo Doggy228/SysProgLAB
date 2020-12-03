@@ -43,20 +43,20 @@ L1:
 	pop eax
 	mov [ebp-8],eax
 	push edx
+	push edx
 	mov eax,[ebp-4]
 	push eax
-	push edx
 	mov eax,[ebp-8]
+	push eax
+	pop edx
+	pop eax
+	add eax,edx
+	pop edx
 	push eax
 	push dword ptr 1
 	pop edx
 	pop eax
 	sub eax,edx
-	pop edx
-	push eax
-	pop edx
-	pop eax
-	add eax,edx
 	pop edx
 	push eax
 	pop ebx
