@@ -1,4 +1,5 @@
-C:\prj\io8322\sysprog\lab\2-20-Java-IO-83-Omelyanskyi>PythonCompile.bat test2
+
+C:\prj\io8322\sysprog\lab\2-20-Java-IO-83-Omelyanskyi>PythonCompile test2
 [Compiler  ] [INFO   ] Python compiler
 [Compiler  ] [INFO   ] Source file: test2.py
 [Compiler  ] [INFO   ] Read 2 rows.
@@ -41,22 +42,23 @@ SYNTAX TREE:
               {retValue}:
                 [EXPR_BINARYPLUS]:
                   {expr1}:
-                    [EXPR_CONSTINT]: "47"
-                  {expr2}:
                     [EXPR_BINARYPLUS]:
                       {expr1}:
-                        [EXPR_CONSTINT]: "84"
+                        [EXPR_CONSTINT]: "47"
                       {expr2}:
-                        [EXPR_UNARYNOT]:
-                          [EXPR_CONSTINT]: "0"
+                        [EXPR_CONSTINT]: "84"
+                  {expr2}:
+                    [EXPR_UNARYNOT]:
+                      [EXPR_CONSTINT]: "0"
 
 -----------------------------------------------
 [Compiler  ] [INFO   ] Generate destination files
 [Compiler  ] [INFO   ] Result file: test2.asm
-[Compiler  ] [INFO   ] Python Compiler finished OK. [ 46 ms]
+[Compiler  ] [INFO   ] Python Compiler finished OK. [ 57 ms]
 
 
 ===========================================================
 === Execution test2.exe
 ===========================================================
 132
+

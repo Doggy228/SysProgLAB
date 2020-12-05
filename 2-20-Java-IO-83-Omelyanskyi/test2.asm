@@ -18,9 +18,14 @@ start:
 	invoke ExitProcess,0
 main PROC
 	push edx
-	push dword ptr 47
 	push edx
+	push dword ptr 47
 	push dword ptr 84
+	pop edx
+	pop eax
+	add eax,edx
+	pop edx
+	push eax
 	push dword ptr 0
 	pop eax
 	cmp eax,0
@@ -30,11 +35,6 @@ main PROC
 L1:
 	push dword ptr 1
 L2:
-	pop edx
-	pop eax
-	add eax,edx
-	pop edx
-	push eax
 	pop edx
 	pop eax
 	add eax,edx

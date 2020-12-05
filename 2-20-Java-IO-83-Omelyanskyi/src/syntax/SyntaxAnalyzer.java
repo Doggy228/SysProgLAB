@@ -133,11 +133,21 @@ public class SyntaxAnalyzer {
 
     public Expr parseExpr() throws CompileException {
         Expr expr1 = parseTerm();
-        if(tokenPeek(0)!=null){
-            if(tokenCur().getLexType().getType()==LexTypeEnum.PLUS){
+        if (tokenPeek(0) != null) {
+            Expr expr = null;
+            if (tokenCur().getLexType().getType() == LexTypeEnum.PLUS) {
                 tokenNext();
-                Expr expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseExpr());
-                return expr;
+                expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseTerm());
+            }
+            if(expr!=null){
+                if(tokenPeek(0)==null) return expr;
+                switch(tokenCur().getLexType().getType()){
+                    case PLUS:
+                        tokenNext();
+                        return new Expr_BinaryPlus(expr.getRow(), expr.getCol(), expr, parseExpr());
+                    default:
+                        return expr;
+                }
             }
         }
         return expr1;

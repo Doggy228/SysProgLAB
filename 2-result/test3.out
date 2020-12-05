@@ -1,4 +1,5 @@
-C:\prj\io8322\sysprog\lab\2-20-Java-IO-83-Omelyanskyi>PythonCompile.bat test3
+
+C:\prj\io8322\sysprog\lab\2-20-Java-IO-83-Omelyanskyi>PythonCompile test3
 [Compiler  ] [INFO   ] Python compiler
 [Compiler  ] [INFO   ] Source file: test3.py
 [Compiler  ] [INFO   ] Read 2 rows.
@@ -55,10 +56,11 @@ SYNTAX TREE:
 -----------------------------------------------
 [Compiler  ] [INFO   ] Generate destination files
 [Compiler  ] [INFO   ] Result file: test3.asm
-[Compiler  ] [INFO   ] Python Compiler finished OK. [ 47 ms]
+[Compiler  ] [INFO   ] Python Compiler finished OK. [ 61 ms]
 
 
 ===========================================================
 === Execution test3.exe
 ===========================================================
 132
+
