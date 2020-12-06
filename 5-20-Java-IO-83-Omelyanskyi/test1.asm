@@ -73,7 +73,6 @@ L5:
 	mov eax,[ebp-8]
 	push eax
 	push edx
-	mov edx,777
 	push ebx
 	push ecx
 	push edx
@@ -86,7 +85,6 @@ L5:
 	pop ecx
 	pop ebx
 	push eax
-	mov edx,777
 	push ebx
 	push ecx
 	push edx

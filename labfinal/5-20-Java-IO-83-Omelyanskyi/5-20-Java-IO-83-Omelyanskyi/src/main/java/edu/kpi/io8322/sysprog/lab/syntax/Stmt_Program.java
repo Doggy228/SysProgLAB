@@ -35,7 +35,7 @@ public class Stmt_Program extends Stmt {
         buf.append(indent + "[" + getType() + "]" + System.lineSeparator());
         for (Stmt_Function stmtFunction : functionList) {
             buf.append(indent + "  {function}:" + System.lineSeparator());
-            stmtFunction.printTree(buf, "    " + indent);
+            stmtFunction.printTree(buf, indent+"    ");
         }
     }
 

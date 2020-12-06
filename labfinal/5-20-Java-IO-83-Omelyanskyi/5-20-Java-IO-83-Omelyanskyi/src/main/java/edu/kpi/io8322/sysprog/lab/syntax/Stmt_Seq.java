@@ -24,11 +24,11 @@ public class Stmt_Seq extends Stmt {
         buf.append(indent+"["+getType()+"]"+System.lineSeparator());
         if(stmt1!=null) {
             buf.append(indent + "  {stmt1}:" + System.lineSeparator());
-            stmt1.printTree(buf, "    " + indent);
+            stmt1.printTree(buf, indent+"    ");
         }
         if(stmt2!=null) {
             buf.append(indent + "  {stmt2}:" + System.lineSeparator());
-            stmt2.printTree(buf, "    " + indent);
+            stmt2.printTree(buf, indent+"    ");
         }
     }
 

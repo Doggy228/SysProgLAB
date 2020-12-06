@@ -24,10 +24,10 @@ public class Stmt_Set extends Stmt {
         buf.append(indent+"["+getType()+"]"+System.lineSeparator());
         if(varName!=null) {
             buf.append(indent + "  {varName}:" + System.lineSeparator());
-            varName.printTree(buf, "    " + indent);
+            varName.printTree(buf, indent+"    ");
         }
         buf.append(indent + "  {varValue}:" + System.lineSeparator());
-        varValue.printTree(buf, "    " + indent);
+        varValue.printTree(buf, indent+"    ");
     }
 
     @Override

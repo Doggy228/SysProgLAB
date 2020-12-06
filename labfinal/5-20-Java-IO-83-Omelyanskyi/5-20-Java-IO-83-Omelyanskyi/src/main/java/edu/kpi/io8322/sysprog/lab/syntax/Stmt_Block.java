@@ -25,7 +25,7 @@ public class Stmt_Block extends Stmt {
         buf.append(indent+"["+getType()+"]"+System.lineSeparator());
         if(body!=null){
             buf.append(indent+"  {bodyBlock}:"+System.lineSeparator());
-            body.printTree(buf, "    "+indent);
+            body.printTree(buf, indent+"    ");
         }
     }
 

@@ -333,12 +333,12 @@ public class SyntaxAnalyzer {
     }
 
     public void printTree() {
-        System.out.println("SYNTAX TREE:");
-        System.out.println("-----------------------------------------------");
+        System.out.println(PythonCompiler.NAME_PRG+"SYNTAX TREE:");
+        System.out.println(PythonCompiler.NAME_PRG+"-----------------------------------------------");
         StringBuilder bufPrint = new StringBuilder();
-        root.printTree(bufPrint, "");
+        root.printTree(bufPrint, PythonCompiler.NAME_PRG+"");
         System.out.println(bufPrint);
-        System.out.println("-----------------------------------------------");
+        System.out.println(PythonCompiler.NAME_PRG+"-----------------------------------------------");
     }
 
     public int newLabel() {

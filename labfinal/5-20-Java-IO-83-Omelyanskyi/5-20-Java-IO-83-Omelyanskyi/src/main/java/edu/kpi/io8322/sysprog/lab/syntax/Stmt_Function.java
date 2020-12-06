@@ -31,16 +31,16 @@ public class Stmt_Function extends Stmt {
     public void printTree(StringBuilder buf, String indent) {
         buf.append(indent + "[" + getType() + "]" + System.lineSeparator());
         buf.append(indent + "  {nameFunction}:" + System.lineSeparator());
-        name.printTree(buf, "    " + indent);
+        name.printTree(buf, indent+"    ");
         if(!params.isEmpty()){
             buf.append(indent + "  {params}:" + System.lineSeparator());
             for(Expr_IdVarFunc param: params) {
-                param.printTree(buf, "    " + indent);
+                param.printTree(buf, indent+"    ");
             }
         }
         if (body != null) {
             buf.append(indent + "  {bodyFunction}:" + System.lineSeparator());
-            body.printTree(buf, "    " + indent);
+            body.printTree(buf, indent+"    ");
         }
     }
 

@@ -145,11 +145,11 @@ public class LexicalAnalyzer {
     }
 
     public void printTokenList(){
-        System.out.println("TOKEN LIST:");
-        System.out.println("-----------------------------------------------");
+        System.out.println(PythonCompiler.NAME_PRG+"TOKEN LIST:");
+        System.out.println(PythonCompiler.NAME_PRG+"-----------------------------------------------");
         for(Token token: tokenList){
-            System.out.println("  "+token.toString());
+            System.out.println(PythonCompiler.NAME_PRG+"  "+token.toString());
         }
-        System.out.println("-----------------------------------------------");
+        System.out.println(PythonCompiler.NAME_PRG+"-----------------------------------------------");
     }
 }

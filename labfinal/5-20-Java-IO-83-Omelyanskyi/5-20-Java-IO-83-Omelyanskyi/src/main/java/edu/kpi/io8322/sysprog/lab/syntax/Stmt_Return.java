@@ -23,7 +23,7 @@ public class Stmt_Return extends Stmt {
     public void printTree(StringBuilder buf, String indent){
         buf.append(indent+"["+getType()+"]"+System.lineSeparator());
         buf.append(indent+"  {retValue}:"+System.lineSeparator());
-        retValue.printTree(buf, "    "+indent);
+        retValue.printTree(buf, indent+"    ");
     }
 
     @Override
