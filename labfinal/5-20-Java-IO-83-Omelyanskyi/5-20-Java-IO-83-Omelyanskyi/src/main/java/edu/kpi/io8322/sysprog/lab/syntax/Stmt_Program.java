@@ -5,25 +5,37 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
 public class Stmt_Program extends Stmt {
-    private Stmt_Function stmtFunction;
+    private List<Stmt_Function> functionList;
 
     public Stmt_Program() {
         super(1, 1);
+        functionList = new ArrayList<>();
     }
 
-    public NodeType getType(){
+    public NodeType getType() {
         return NodeType.STMT_PROGRAM;
     }
 
-    public void printTree(StringBuilder buf, String indent){
-        buf.append(indent+"["+getType()+"]"+System.lineSeparator());
-        if(stmtFunction!=null){
-            buf.append(indent+"  {function}:"+System.lineSeparator());
-            stmtFunction.printTree(buf, "    "+indent);
+    public Stmt_Function findFunction(String name) {
+        for(Stmt_Function stmtFunction: functionList){
+            if(stmtFunction.getName().getName().equals(name)){
+                return stmtFunction;
+            }
+        }
+        return null;
+    }
+
+    public void printTree(StringBuilder buf, String indent) {
+        buf.append(indent + "[" + getType() + "]" + System.lineSeparator());
+        for (Stmt_Function stmtFunction : functionList) {
+            buf.append(indent + "  {function}:" + System.lineSeparator());
+            stmtFunction.printTree(buf, "    " + indent);
         }
     }
 
@@ -38,7 +50,16 @@ public class Stmt_Program extends Stmt {
         prg.outWriteln("includelib \\masm32\\lib\\kernel32.lib");
         prg.outWriteln("includelib \\masm32\\lib\\masm32.lib");
         prg.outWriteln("NumbToStr PROTO :DWORD,:DWORD");
-        prg.outWriteln(stmtFunction.getName().getName()+" PROTO");
+        for (Stmt_Function stmtFunction : functionList) {
+            StringBuilder sb = new StringBuilder(stmtFunction.getName().getName() + " PROTO");
+            if (!stmtFunction.getParams().isEmpty()) {
+                sb.append(" :DWORD");
+                for (int i = 1; i < stmtFunction.getParams().size(); i++) {
+                    sb.append(",:DWORD");
+                }
+            }
+            prg.outWriteln(sb.toString());
+        }
         prg.outWriteln(".data");
         prg.outWriteln("\tbuff db 11 dup(?)");
         prg.outWriteln(".code");
@@ -47,7 +68,9 @@ public class Stmt_Program extends Stmt {
         prg.outWriteln("\tinvoke NumbToStr, ebx, ADDR buff");
         prg.outWriteln("\tinvoke StdOut,eax");
         prg.outWriteln("\tinvoke ExitProcess,0");
-        stmtFunction.gen(prg, 0, 0);
+        for (Stmt_Function stmtFunction : functionList) {
+            stmtFunction.gen(prg, 0, 0);
+        }
         prg.outWriteln("NumbToStr PROC uses ebx x:DWORD,buffer:DWORD");
         prg.outWriteln("\tmov ecx,buffer");
         prg.outWriteln("\tmov eax,x");

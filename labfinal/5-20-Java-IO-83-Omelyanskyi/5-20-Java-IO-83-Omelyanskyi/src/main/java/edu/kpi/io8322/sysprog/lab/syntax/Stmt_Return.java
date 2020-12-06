@@ -28,7 +28,9 @@ public class Stmt_Return extends Stmt {
 
     @Override
     public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
-        prg.outWriteln("\tmov ebx,"+retValue.outGetValue(prg));
+        retValue.outPushValue(prg);
+        prg.outWriteln("\tpop ebx");
+        stmtFunction.getEnv().genFreeMem(prg, stmtFunction.getEnv());
         prg.outWriteln("\tret");
     }
 

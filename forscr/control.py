@@ -1,12 +1,11 @@
-def func_a():
-    return 10
-    
-def func_b(a,b):
-    return func_a()+a-b
-    
 def main():
-    a = func_a()
-    c =  20 
-    c += func_a()+func_b(c,a)
-    return c
+    a = 5
+    while a<20:
+        b = 0
+        while :
+            b += 7
+            break
+            b = 99
+        a += b
+    return ~a+30
 print("Result main(): ",main())

@@ -229,7 +229,7 @@ public class SyntaxAnalyzer {
         if (tokenCur().getLexType().getType() == LexTypeEnum.NOT) {
             Token token_not = tokenCur();
             tokenNext();
-            Expr expr = new Expr_UnaryNot(token_not.getRow(), token_not.getCol(), parseExpr());
+            Expr expr = new Expr_UnaryNot(token_not.getRow(), token_not.getCol(), parseTerm());
             return expr;
         }
         if (tokenCur().getLexType().getType() == LexTypeEnum.ID) {

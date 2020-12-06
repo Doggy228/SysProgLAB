@@ -43,21 +43,26 @@ public class LexicalAnalyzer {
                     tokenList.add(token);
                     col++;
                     if (lexType.getType() == LexTypeEnum.QUOTE1 || lexType.getType() == LexTypeEnum.QUOTE2) {
-                        if (col + 1 >= line.length()) {
+                        int pos = -1;
+                        switch(lexType.getType()){
+                            case QUOTE1:
+                                pos = line.indexOf('\'', col);
+                                break;
+                            case QUOTE2:
+                                pos = line.indexOf('\"', col);
+                                break;
+                        }
+                        if(pos<0){
                             TokenInvalid tokenInvalid = new TokenInvalid(lexFabric, row + 1, col + 1, null, "Not a closed quote.");
                             tokenList.add(tokenInvalid);
                             tokenInvalid.throwCompileException();
+                        } else if(pos==col+1){
+                            tokenList.add(new Token(lexFabric.getLexType(LexTypeEnum.CONSTCHAR), row + 1, col + 1, line.substring(col, pos)));
+                        } else {
+                            tokenList.add(new Token(lexFabric.getLexType(LexTypeEnum.CONSTSTR), row + 1, col + 1, line.substring(col, pos)));
                         }
-                        tokenList.add(new Token(lexFabric.getLexType(LexTypeEnum.CONSTCHAR), row + 1, col + 1, line.substring(col, col + 1)));
-                        col++;
-                        LexType lexType2 = lexFabric.getLexType_symb(line.charAt(col));
-                        if (lexType2 == null || lexType2.getType() != lexType.getType()) {
-                            TokenInvalid tokenInvalid = new TokenInvalid(lexFabric, row + 1, col + 1, line.substring(col, col + 1), "Bad closed quote.");
-                            tokenList.add(tokenInvalid);
-                            tokenInvalid.throwCompileException();
-                        }
-                        tokenList.add(new Token(lexType2, row + 1, col + 1, null));
-                        col++;
+                        tokenList.add(new Token(lexType, row+1, pos+1, null));
+                        col = pos+1;
                     }
                     continue;
                 }

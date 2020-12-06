@@ -22,6 +22,15 @@ public class LexFabric {
         lexTypeMap.put(LexTypeEnum.CONSTINT, new LexType_constint());
         lexTypeMap.put(LexTypeEnum.CONSTCHAR, new LexType_constchar());
         lexTypeMap.put(LexTypeEnum.ID, new LexType_id());
+        lexTypeMap.put(LexTypeEnum.NOT, new LexType_not());
+        lexTypeMap.put(LexTypeEnum.PLUS, new LexType_plus());
+        lexTypeMap.put(LexTypeEnum.MINUS, new LexType_minus());
+        lexTypeMap.put(LexTypeEnum.EQUAL, new LexType_equal());
+        lexTypeMap.put(LexTypeEnum.LESS, new LexType_less());
+        lexTypeMap.put(LexTypeEnum.CONSTSTR, new LexType_conststr());
+        lexTypeMap.put(LexTypeEnum.IF, new LexType_if());
+        lexTypeMap.put(LexTypeEnum.ELSE, new LexType_else());
+        lexTypeMap.put(LexTypeEnum.COMMA, new LexType_comma());
 
         lexTypeSymbMap = new HashMap<>();
         lexTypeSymbMap.put(Character.valueOf('('), (LexType_symb) getLexType(LexTypeEnum.BKTB));
@@ -29,11 +38,18 @@ public class LexFabric {
         lexTypeSymbMap.put(Character.valueOf(':'), (LexType_symb) getLexType(LexTypeEnum.COLON));
         lexTypeSymbMap.put(Character.valueOf('\''), (LexType_symb) getLexType(LexTypeEnum.QUOTE1));
         lexTypeSymbMap.put(Character.valueOf('\"'), (LexType_symb) getLexType(LexTypeEnum.QUOTE2));
+        lexTypeSymbMap.put(Character.valueOf('+'), (LexType_symb) getLexType(LexTypeEnum.PLUS));
+        lexTypeSymbMap.put(Character.valueOf('-'), (LexType_symb) getLexType(LexTypeEnum.MINUS));
+        lexTypeSymbMap.put(Character.valueOf('='), (LexType_symb) getLexType(LexTypeEnum.EQUAL));
+        lexTypeSymbMap.put(Character.valueOf('<'), (LexType_symb) getLexType(LexTypeEnum.LESS));
+        lexTypeSymbMap.put(Character.valueOf(','), (LexType_symb) getLexType(LexTypeEnum.COMMA));
 
         lexTypeKeywordMap = new HashMap<>();
         lexTypeKeywordMap.put("def", (LexType_keyword) getLexType(LexTypeEnum.DEF));
         lexTypeKeywordMap.put("return", (LexType_keyword) getLexType(LexTypeEnum.RETURN));
-
+        lexTypeKeywordMap.put("not", (LexType_keyword) getLexType(LexTypeEnum.NOT));
+        lexTypeKeywordMap.put("if", (LexType_keyword) getLexType(LexTypeEnum.IF));
+        lexTypeKeywordMap.put("else", (LexType_keyword) getLexType(LexTypeEnum.ELSE));
     }
 
     public LexType getLexType(LexTypeEnum type) {
