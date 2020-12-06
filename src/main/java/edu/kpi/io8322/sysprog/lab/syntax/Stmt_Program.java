@@ -72,8 +72,16 @@ public class Stmt_Program extends Stmt {
             stmtFunction.gen(prg, 0, 0);
         }
         prg.outWriteln("NumbToStr PROC uses ebx x:DWORD,buffer:DWORD");
-        prg.outWriteln("\tmov ecx,buffer");
         prg.outWriteln("\tmov eax,x");
+        prg.outWriteln("\ttest eax,0x80000000");
+        prg.outWriteln("\tjz LL2");
+        prg.outWriteln("\tpush dword ptr 0x2D");
+        prg.outWriteln("\tneg ax");
+        prg.outWriteln("\tjmp LL3");
+        prg.outWriteln("LL2:");
+        prg.outWriteln("\tpush dword ptr 0x20");
+        prg.outWriteln("LL3:");
+        prg.outWriteln("\tmov ecx,buffer");
         prg.outWriteln("\tmov ebx,10");
         prg.outWriteln("\tadd ecx,ebx");
         prg.outWriteln("LL1:");
@@ -84,7 +92,8 @@ public class Stmt_Program extends Stmt {
         prg.outWriteln("\tdec ecx");
         prg.outWriteln("\ttest eax,eax");
         prg.outWriteln("\tjnz LL1");
-        prg.outWriteln("\tinc ecx");
+        prg.outWriteln("\tpop edx");
+        prg.outWriteln("\tmov BYTE PTR [ecx],dl");
         prg.outWriteln("\tmov eax,ecx");
         prg.outWriteln("\tret");
         prg.outWriteln("NumbToStr ENDP");

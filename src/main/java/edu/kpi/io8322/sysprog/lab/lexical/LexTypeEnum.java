@@ -5,5 +5,6 @@ public enum LexTypeEnum {
     NOT, PLUS,
     EQUAL, MINUS, LESS, CONSTSTR,
     IF, ELSE,
-    COMMA
+    COMMA,
+    TILDA
 }
