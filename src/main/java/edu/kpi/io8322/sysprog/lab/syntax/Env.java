@@ -11,14 +11,16 @@ public class Env {
     private List<Expr_IdVar> varList;
     protected int memOffsetPos;
     protected Env prev;
+    protected Stmt_Function functionCur;
     private int id;
     private int level;
 
-    public Env(Env prev) {
+    public Env(Env prev, Stmt_Function functionCur) {
         this.id = SEQ_ID;
         SEQ_ID++;
         memOffsetPos = 0;
         this.prev = prev;
+        this.functionCur = functionCur;
         if (prev == null) {
             level = 1;
         } else {
@@ -47,8 +49,10 @@ public class Env {
 
     public void putVar(Expr_IdVar node) {
         varList.add(node);
-        memOffsetPos += 4;
-        node.setMemOffset(memOffsetPos);
+        if(node.getType()!=NodeType.EXPR_IDVARFUNC) {
+            memOffsetPos += 4;
+            node.setMemOffset(memOffsetPos);
+        }
     }
 
     public Expr_IdVar getVar(String key) {

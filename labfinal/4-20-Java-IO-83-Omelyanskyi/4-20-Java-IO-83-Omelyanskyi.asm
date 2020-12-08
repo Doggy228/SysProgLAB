@@ -21,13 +21,13 @@ main PROC
 	mov ebp,esp
 	sub esp,8
 L1:
-	push dword ptr 5
+	push dword ptr 55
 	pop eax
 	mov [ebp-4],eax
 	push edx
 	mov eax,[ebp-4]
 	push eax
-	push dword ptr 3
+	push dword ptr 54
 	pop edx
 	pop eax
 	cmp eax,edx
@@ -47,13 +47,54 @@ L5:
 	push edx
 	mov eax,[ebp-4]
 	push eax
-	push dword ptr 2
+	push dword ptr 52
 	pop edx
 	pop eax
 	add eax,edx
 	pop edx
 	push eax
 L6:
+	pop eax
+	mov [ebp-8],eax
+	push edx
+	push dword ptr 100
+	mov eax,[ebp-8]
+	push eax
+	pop edx
+	pop eax
+	cmp eax,edx
+	pop edx
+	jl L7
+	push dword ptr 0
+	jmp L8
+L7:
+	push dword ptr 1
+L8:
+	pop eax
+	cmp eax,0
+	je L9
+	push edx
+	mov eax,[ebp-8]
+	push eax
+	push dword ptr 47
+	pop edx
+	pop eax
+	sub eax,edx
+	pop edx
+	push eax
+	jmp L10
+L9:
+	mov eax,[ebp-8]
+	push eax
+	pop eax
+	cmp eax,0
+	je L11
+	push dword ptr 0
+	jmp L12
+L11:
+	push dword ptr 1
+L12:
+L10:
 	pop eax
 	mov [ebp-8],eax
 	mov eax,[ebp-8]
@@ -67,8 +108,16 @@ L2:
 	pop ebp
 main ENDP
 NumbToStr PROC uses ebx x:DWORD,buffer:DWORD
-	mov ecx,buffer
 	mov eax,x
+	test eax,80000000h
+	jz LL2
+	push dword ptr 2Dh
+	neg eax
+	jmp LL3
+LL2:
+	push dword ptr 20h
+LL3:
+	mov ecx,buffer
 	mov ebx,10
 	add ecx,ebx
 LL1:
@@ -79,7 +128,8 @@ LL1:
 	dec ecx
 	test eax,eax
 	jnz LL1
-	inc ecx
+	pop edx
+	mov BYTE PTR [ecx],dl
 	mov eax,ecx
 	ret
 NumbToStr ENDP

@@ -19,7 +19,7 @@ start:
 main PROC
 	push ebp
 	mov ebp,esp
-	sub esp,4
+	sub esp,8
 L1:
 	push dword ptr 5
 	pop eax
@@ -28,7 +28,7 @@ L3:
 	push edx
 	mov eax,[ebp-4]
 	push eax
-	push dword ptr 10
+	push dword ptr 20
 	pop edx
 	pop eax
 	cmp eax,edx
@@ -43,29 +43,14 @@ L6:
 	cmp eax,0
 	je L4
 L7:
-	push edx
-	mov eax,[ebp-4]
-	push eax
-	push dword ptr 3
-	pop edx
+	push dword ptr 0
 	pop eax
-	add eax,edx
-	pop edx
-	push eax
-	pop eax
-	mov [ebp-4],eax
-	jmp L3
-	push dword ptr 99
-	pop eax
-	mov [ebp-4],eax
-L8:
-	jmp L3
-L4:
+	mov [ebp-8],eax
 L9:
 	push edx
-	mov eax,[ebp-4]
+	mov eax,[ebp-8]
 	push eax
-	push dword ptr 30
+	push dword ptr 20
 	pop edx
 	pop eax
 	cmp eax,edx
@@ -81,9 +66,28 @@ L12:
 	je L10
 L13:
 	push edx
+	mov eax,[ebp-8]
+	push eax
+	push dword ptr 7
+	pop edx
+	pop eax
+	add eax,edx
+	pop edx
+	push eax
+	pop eax
+	mov [ebp-8],eax
+	jmp L10
+	push dword ptr 99
+	pop eax
+	mov [ebp-8],eax
+L14:
+	jmp L9
+L10:
+	push edx
 	mov eax,[ebp-4]
 	push eax
-	push dword ptr 3
+	mov eax,[ebp-8]
+	push eax
 	pop edx
 	pop eax
 	add eax,edx
@@ -91,17 +95,20 @@ L13:
 	push eax
 	pop eax
 	mov [ebp-4],eax
-	jmp L10
-	push dword ptr 99
-	pop eax
-	mov [ebp-4],eax
-L14:
-	jmp L9
-L10:
+L8:
+	jmp L3
+L4:
+	push edx
 	mov eax,[ebp-4]
 	push eax
 	pop eax
 	not eax
+	push eax
+	push dword ptr 30
+	pop edx
+	pop eax
+	add eax,edx
+	pop edx
 	push eax
 	pop ebx
 	mov esp,ebp

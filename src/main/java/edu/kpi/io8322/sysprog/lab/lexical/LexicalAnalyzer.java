@@ -79,7 +79,7 @@ public class LexicalAnalyzer {
                     col = next;
                     continue;
                 }
-                if (checkConstInt(tokenValue)) {
+                if (checkConstInt(tokenValue, row+1, col+1)) {
                     tokenList.add(new Token(lexFabric.getLexType(LexTypeEnum.CONSTINT), row + 1, col + 1, tokenValue));
                     col = next;
                     continue;
@@ -112,24 +112,36 @@ public class LexicalAnalyzer {
         return next;
     }
 
-    private boolean checkConstInt(String value) {
-        if (value.length() > 10) return false;
-        if (value.startsWith("0x")) {
-            if(value.length()==2) return false;
-            for (int i = 2; i < value.length(); i++) {
-                if (!((value.charAt(i) >= '0' && value.charAt(i) <= '9') ||
-                        (value.charAt(i) >= 'a' && value.charAt(i) <= 'f') ||
-                        (value.charAt(i) >= 'A' && value.charAt(i) <= 'F'))) return false;
+    private boolean checkConstInt(String value, int row, int col) throws CompileException {
+        try {
+            if (value.startsWith("0x")) {
+                if (value.length() == 2) throw new Exception("Bad number format.");
+                for (int i = 2; i < value.length(); i++) {
+                    if (!((value.charAt(i) >= '0' && value.charAt(i) <= '9') ||
+                            (value.charAt(i) >= 'a' && value.charAt(i) <= 'f') ||
+                            (value.charAt(i) >= 'A' && value.charAt(i) <= 'F'))) throw new Exception("Bad number format.");
+                }
+                if(value.length()>10) throw new Exception("Value exceeds the maximum allowable.");
+                if (Long.parseLong(value.substring(2), 16) > Integer.MAX_VALUE) throw new Exception("Value exceeds the maximum allowable.");
+                return true;
+            } else if (value.charAt(0) >= '0' && value.charAt(0) <= '9') {
+                for (int i = 0; i < value.length(); i++) {
+                    if (value.charAt(i) < '0' || value.charAt(i) > '9') throw new Exception("Bad number format.");
+                }
+                if(value.length()>10) throw new Exception("Value exceeds the maximum allowable.");
+                if (Long.parseLong(value, 10) > Integer.MAX_VALUE) throw new Exception("Value exceeds the maximum allowable.");
+                return true;
+            } else {
+                return false;
             }
-            if (Long.parseLong(value.substring(2), 16) > Integer.MAX_VALUE) return false;
-        } else {
-            for (int i = 0; i < value.length(); i++) {
-                if (value.charAt(i) < '0' || value.charAt(i) > '9') return false;
-            }
-            if (Long.parseLong(value, 10) > Integer.MAX_VALUE) return false;
+        } catch (Exception e){
+            TokenInvalid tokenInvalid = new TokenInvalid(lexFabric, row, col, value, e.getMessage());
+            tokenList.add(tokenInvalid);
+            tokenInvalid.throwCompileException();
+            return false;
         }
-        return true;
     }
+
 
     private boolean checkId(String value) {
         if (!((value.charAt(0) >= 'A' && value.charAt(0) <= 'Z') || (value.charAt(0) >= 'a' && value.charAt(0) <= 'z')))

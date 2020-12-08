@@ -13,11 +13,6 @@ public class Expr_UnaryNot extends Expr_Unary {
         return NodeType.EXPR_UNARYNOT;
     }
 
-    public void printTree(StringBuilder buf, String indent){
-        buf.append(indent+"["+getType()+"]: "+System.lineSeparator());
-        getExpr().printTree(buf, indent+"  ");
-    }
-
     @Override
     public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
         getExpr().outPushValue(prg);

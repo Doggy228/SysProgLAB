@@ -11,7 +11,7 @@ import java.util.List;
 
 @Getter
 public class PythonCompiler {
-    public static final String NAME_PRG = "[4-20-Java-IO-83-Omelyanskyi] ";
+    public static final String NAME_PRG = "[6-20-Java-IO-83-Omelyanskyi] ";
     private static final String LOG_FORMAT = NAME_PRG+"[%1$-10s] [%2$-7s] %3$s";
     public static PythonCompiler app;
 

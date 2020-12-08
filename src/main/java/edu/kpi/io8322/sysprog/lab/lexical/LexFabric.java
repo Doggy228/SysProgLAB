@@ -30,6 +30,11 @@ public class LexFabric {
         lexTypeMap.put(LexTypeEnum.CONSTSTR, new LexType_conststr());
         lexTypeMap.put(LexTypeEnum.IF, new LexType_if());
         lexTypeMap.put(LexTypeEnum.ELSE, new LexType_else());
+        lexTypeMap.put(LexTypeEnum.COMMA, new LexType_comma());
+        lexTypeMap.put(LexTypeEnum.TILDA, new LexType_tilda());
+        lexTypeMap.put(LexTypeEnum.WHILE, new LexType_while());
+        lexTypeMap.put(LexTypeEnum.BREAK, new LexType_break());
+        lexTypeMap.put(LexTypeEnum.CONTINUE, new LexType_continue());
 
         lexTypeSymbMap = new HashMap<>();
         lexTypeSymbMap.put(Character.valueOf('('), (LexType_symb) getLexType(LexTypeEnum.BKTB));
@@ -41,6 +46,8 @@ public class LexFabric {
         lexTypeSymbMap.put(Character.valueOf('-'), (LexType_symb) getLexType(LexTypeEnum.MINUS));
         lexTypeSymbMap.put(Character.valueOf('='), (LexType_symb) getLexType(LexTypeEnum.EQUAL));
         lexTypeSymbMap.put(Character.valueOf('<'), (LexType_symb) getLexType(LexTypeEnum.LESS));
+        lexTypeSymbMap.put(Character.valueOf(','), (LexType_symb) getLexType(LexTypeEnum.COMMA));
+        lexTypeSymbMap.put(Character.valueOf('~'), (LexType_symb) getLexType(LexTypeEnum.TILDA));
 
         lexTypeKeywordMap = new HashMap<>();
         lexTypeKeywordMap.put("def", (LexType_keyword) getLexType(LexTypeEnum.DEF));
@@ -48,6 +55,9 @@ public class LexFabric {
         lexTypeKeywordMap.put("not", (LexType_keyword) getLexType(LexTypeEnum.NOT));
         lexTypeKeywordMap.put("if", (LexType_keyword) getLexType(LexTypeEnum.IF));
         lexTypeKeywordMap.put("else", (LexType_keyword) getLexType(LexTypeEnum.ELSE));
+        lexTypeKeywordMap.put("while", (LexType_keyword) getLexType(LexTypeEnum.WHILE));
+        lexTypeKeywordMap.put("break", (LexType_keyword) getLexType(LexTypeEnum.BREAK));
+        lexTypeKeywordMap.put("continue", (LexType_keyword) getLexType(LexTypeEnum.CONTINUE));
     }
 
     public LexType getLexType(LexTypeEnum type) {

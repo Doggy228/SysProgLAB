@@ -1,0 +1,30 @@
+
+plugins {
+    id 'java'
+}
+
+
+
+jar {
+    archiveBaseName = 'io8322-sysprog-lab'
+    archiveVersion =  '1.0.0'
+    manifest {
+        attributes 'Main-Class': 'edu.kpi.io8322.sysprog.lab.PythonCompiler'
+    }
+}
+
+group = 'edu.kpi.io8322.sysprog'
+version = '1.0.0'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.16'
+    annotationProcessor 'org.projectlombok:lombok:1.18.16'
+}

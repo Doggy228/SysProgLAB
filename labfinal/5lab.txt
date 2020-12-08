@@ -1,0 +1,1998 @@
+CompileException.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.core;
+
+import edu.kpi.io8322.sysprog.lab.PythonCompiler;
+import edu.kpi.io8322.sysprog.lab.lexical.TokenInvalid;
+import lombok.Getter;
+
+@Getter
+public class CompileException extends Exception {
+    private int row;
+    private int col;
+
+    public CompileException(int row, int col, String message, Throwable cause) {
+        super(message, cause);
+        this.row = row;
+        this.col = col;
+    }
+
+    public CompileException(TokenInvalid token) {
+        super(token.getErrMsg(), null);
+        this.row = token.getRow();
+        this.col = token.getCol();
+    }
+
+    @Override
+    public String toString() {
+        return PythonCompiler.app.getSrcname() +
+                "[" + row + "," + col + "]->[" + PythonCompiler.app.getSrclines().get(row - 1) + "]" + System.lineSeparator() + String.format("%1$50s %2$s", "ERR: ", getMessage());
+    }
+}
+LexFabric.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class LexFabric {
+    private Map<LexTypeEnum, LexType> lexTypeMap;
+    private Map<Character, LexType_symb> lexTypeSymbMap;
+    private Map<String, LexType_keyword> lexTypeKeywordMap;
+
+    public LexFabric(LexicalAnalyzer lexicalAnalyzer) {
+        lexTypeMap = new HashMap<>();
+        lexTypeMap.put(LexTypeEnum.NONE, new LexType_none());
+        lexTypeMap.put(LexTypeEnum.BLOCKINDENT, new LexType_blockindent());
+        lexTypeMap.put(LexTypeEnum.BKTB, new LexType_bktb());
+        lexTypeMap.put(LexTypeEnum.BKTE, new LexType_bkte());
+        lexTypeMap.put(LexTypeEnum.COLON, new LexType_colon());
+        lexTypeMap.put(LexTypeEnum.QUOTE1, new LexType_quote1());
+        lexTypeMap.put(LexTypeEnum.QUOTE2, new LexType_quote2());
+        lexTypeMap.put(LexTypeEnum.DEF, new LexType_def());
+        lexTypeMap.put(LexTypeEnum.RETURN, new LexType_return());
+        lexTypeMap.put(LexTypeEnum.CONSTINT, new LexType_constint());
+        lexTypeMap.put(LexTypeEnum.CONSTCHAR, new LexType_constchar());
+        lexTypeMap.put(LexTypeEnum.ID, new LexType_id());
+        lexTypeMap.put(LexTypeEnum.NOT, new LexType_not());
+        lexTypeMap.put(LexTypeEnum.PLUS, new LexType_plus());
+        lexTypeMap.put(LexTypeEnum.MINUS, new LexType_minus());
+        lexTypeMap.put(LexTypeEnum.EQUAL, new LexType_equal());
+        lexTypeMap.put(LexTypeEnum.LESS, new LexType_less());
+        lexTypeMap.put(LexTypeEnum.CONSTSTR, new LexType_conststr());
+        lexTypeMap.put(LexTypeEnum.IF, new LexType_if());
+        lexTypeMap.put(LexTypeEnum.ELSE, new LexType_else());
+        lexTypeMap.put(LexTypeEnum.COMMA, new LexType_comma());
+
+        lexTypeSymbMap = new HashMap<>();
+        lexTypeSymbMap.put(Character.valueOf('('), (LexType_symb) getLexType(LexTypeEnum.BKTB));
+        lexTypeSymbMap.put(Character.valueOf(')'), (LexType_symb) getLexType(LexTypeEnum.BKTE));
+        lexTypeSymbMap.put(Character.valueOf(':'), (LexType_symb) getLexType(LexTypeEnum.COLON));
+        lexTypeSymbMap.put(Character.valueOf('\''), (LexType_symb) getLexType(LexTypeEnum.QUOTE1));
+        lexTypeSymbMap.put(Character.valueOf('\"'), (LexType_symb) getLexType(LexTypeEnum.QUOTE2));
+        lexTypeSymbMap.put(Character.valueOf('+'), (LexType_symb) getLexType(LexTypeEnum.PLUS));
+        lexTypeSymbMap.put(Character.valueOf('-'), (LexType_symb) getLexType(LexTypeEnum.MINUS));
+        lexTypeSymbMap.put(Character.valueOf('='), (LexType_symb) getLexType(LexTypeEnum.EQUAL));
+        lexTypeSymbMap.put(Character.valueOf('<'), (LexType_symb) getLexType(LexTypeEnum.LESS));
+        lexTypeSymbMap.put(Character.valueOf(','), (LexType_symb) getLexType(LexTypeEnum.COMMA));
+
+        lexTypeKeywordMap = new HashMap<>();
+        lexTypeKeywordMap.put("def", (LexType_keyword) getLexType(LexTypeEnum.DEF));
+        lexTypeKeywordMap.put("return", (LexType_keyword) getLexType(LexTypeEnum.RETURN));
+        lexTypeKeywordMap.put("not", (LexType_keyword) getLexType(LexTypeEnum.NOT));
+        lexTypeKeywordMap.put("if", (LexType_keyword) getLexType(LexTypeEnum.IF));
+        lexTypeKeywordMap.put("else", (LexType_keyword) getLexType(LexTypeEnum.ELSE));
+    }
+
+    public LexType getLexType(LexTypeEnum type) {
+        return lexTypeMap.get(type);
+    }
+
+    public LexType_symb getLexType_symb(char value) {
+        return lexTypeSymbMap.get(Character.valueOf(value));
+    }
+
+    public LexType_keyword getLexType_keyword(String value) {
+        return lexTypeKeywordMap.get(value);
+    }
+}
+LexicalAnalyzer.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+import edu.kpi.io8322.sysprog.lab.PythonCompiler;
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+public class LexicalAnalyzer {
+    private List<String> srclines;
+    private List<Token> tokenList;
+    private LexFabric lexFabric;
+
+    public LexicalAnalyzer(List<String> srclines) {
+        this.srclines = srclines;
+        this.lexFabric = new LexFabric(this);
+    }
+
+    public void exec() throws CompileException {
+        PythonCompiler.app.logInfo(null, null, "Lexical analyzer starting.");
+        tokenList = new ArrayList<>();
+        for (int row = 0; row < srclines.size(); row++) {
+            String line = srclines.get(row);
+            int block_indent = 0;
+            while (block_indent < line.length() && line.charAt(block_indent) == ' ') {
+                block_indent++;
+            }
+            if (block_indent > line.length()) continue;
+            tokenList.add(new Token(lexFabric.getLexType(LexTypeEnum.BLOCKINDENT), row + 1, 1, line.substring(0, block_indent)));
+            int col = block_indent;
+            while (col < line.length()) {
+                if (line.charAt(col) == ' ') {
+                    col++;
+                    continue;
+                }
+                LexType lexType = lexFabric.getLexType_symb(line.charAt(col));
+                if (lexType != null) {
+                    Token token = new Token(lexType, row + 1, col + 1, null);
+                    tokenList.add(token);
+                    col++;
+                    if (lexType.getType() == LexTypeEnum.QUOTE1 || lexType.getType() == LexTypeEnum.QUOTE2) {
+                        int pos = -1;
+                        switch(lexType.getType()){
+                            case QUOTE1:
+                                pos = line.indexOf('\'', col);
+                                break;
+                            case QUOTE2:
+                                pos = line.indexOf('\"', col);
+                                break;
+                        }
+                        if(pos<0){
+                            TokenInvalid tokenInvalid = new TokenInvalid(lexFabric, row + 1, col + 1, null, "Not a closed quote.");
+                            tokenList.add(tokenInvalid);
+                            tokenInvalid.throwCompileException();
+                        } else if(pos==col+1){
+                            tokenList.add(new Token(lexFabric.getLexType(LexTypeEnum.CONSTCHAR), row + 1, col + 1, line.substring(col, pos)));
+                        } else {
+                            tokenList.add(new Token(lexFabric.getLexType(LexTypeEnum.CONSTSTR), row + 1, col + 1, line.substring(col, pos)));
+                        }
+                        tokenList.add(new Token(lexType, row+1, pos+1, null));
+                        col = pos+1;
+                    }
+                    continue;
+                }
+                int next = searchToken(line, col);
+                if (col == next) {
+                    TokenInvalid tokenInvalid = new TokenInvalid(lexFabric, row + 1, col + 1, line.substring(col, col + 1), "Bad symbol.");
+                    tokenList.add(tokenInvalid);
+                    tokenInvalid.throwCompileException();
+                }
+                String tokenValue = line.substring(col, next);
+                lexType = lexFabric.getLexType_keyword(tokenValue);
+                if (lexType != null) {
+                    tokenList.add(new Token(lexType, row + 1, col + 1, null));
+                    col = next;
+                    continue;
+                }
+                if (checkConstInt(tokenValue)) {
+                    tokenList.add(new Token(lexFabric.getLexType(LexTypeEnum.CONSTINT), row + 1, col + 1, tokenValue));
+                    col = next;
+                    continue;
+                }
+                if (checkId(tokenValue)) {
+                    tokenList.add(new Token(lexFabric.getLexType(LexTypeEnum.ID), row + 1, col + 1, tokenValue));
+                    col = next;
+                    continue;
+                }
+                TokenInvalid tokenInvalid = new TokenInvalid(lexFabric, row + 1, col + 1, tokenValue, "Bad identifier.");
+                tokenList.add(tokenInvalid);
+                tokenInvalid.throwCompileException();
+            }
+        }
+        PythonCompiler.app.logInfo(null, null, "Lexical analyzer finished OK. [" + tokenList.size() + " lexems]");
+    }
+
+    private int searchToken(String line, int start) {
+        int next = start;
+        while (next < line.length()) {
+            if ((line.charAt(next) >= 'A' && line.charAt(next) <= 'Z') ||
+                    (line.charAt(next) >= 'a' && line.charAt(next) <= 'z') ||
+                    (line.charAt(next) >= '0' && line.charAt(next) <= '9') ||
+                    line.charAt(next) == '_') {
+                next++;
+            } else {
+                return next;
+            }
+        }
+        return next;
+    }
+
+    private boolean checkConstInt(String value) {
+        if (value.length() > 10) return false;
+        if (value.startsWith("0x")) {
+            if(value.length()==2) return false;
+            for (int i = 2; i < value.length(); i++) {
+                if (!((value.charAt(i) >= '0' && value.charAt(i) <= '9') ||
+                        (value.charAt(i) >= 'a' && value.charAt(i) <= 'f') ||
+                        (value.charAt(i) >= 'A' && value.charAt(i) <= 'F'))) return false;
+            }
+            if (Long.parseLong(value.substring(2), 16) > Integer.MAX_VALUE) return false;
+        } else {
+            for (int i = 0; i < value.length(); i++) {
+                if (value.charAt(i) < '0' || value.charAt(i) > '9') return false;
+            }
+            if (Long.parseLong(value, 10) > Integer.MAX_VALUE) return false;
+        }
+        return true;
+    }
+
+    private boolean checkId(String value) {
+        if (!((value.charAt(0) >= 'A' && value.charAt(0) <= 'Z') || (value.charAt(0) >= 'a' && value.charAt(0) <= 'z')))
+            return false;
+        for (int i = 1; i < value.length(); i++) {
+            if (!((value.charAt(i) >= 'A' && value.charAt(i) <= 'Z') ||
+                    (value.charAt(i) >= 'a' && value.charAt(i) <= 'z') ||
+                    (value.charAt(i) >= '0' && value.charAt(i) <= '9') ||
+                    value.charAt(i) == '_'))
+                return false;
+        }
+        return true;
+    }
+
+    public void printTokenList(){
+        System.out.println(PythonCompiler.NAME_PRG+"TOKEN LIST:");
+        System.out.println(PythonCompiler.NAME_PRG+"-----------------------------------------------");
+        for(Token token: tokenList){
+            System.out.println(PythonCompiler.NAME_PRG+"  "+token.toString());
+        }
+        System.out.println(PythonCompiler.NAME_PRG+"-----------------------------------------------");
+    }
+}
+LexType.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public abstract class LexType {
+    private LexicalAnalyzer lexicalAnalyzer;
+    public abstract LexTypeEnum getType();
+}
+LexTypeEnum.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public enum LexTypeEnum {
+    NONE, BLOCKINDENT, SYMB, BKTB, BKTE, COLON, QUOTE1, QUOTE2, KEYWORD, DEF, RETURN, CONST, CONSTINT, CONSTCHAR, ID,
+    NOT, PLUS,
+    EQUAL, MINUS, LESS, CONSTSTR,
+    IF, ELSE,
+    COMMA
+}
+LexType_bktb.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_bktb extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.BKTB;
+    }
+}
+LexType_bkte.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_bkte extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.BKTE;
+    }
+}
+LexType_blockindent.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_blockindent extends LexType {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.BLOCKINDENT;
+    }
+}
+LexType_colon.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_colon extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.COLON;
+    }
+}
+LexType_comma.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_comma extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.COMMA;
+    }
+}
+LexType_const.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public abstract class LexType_const extends LexType {
+}
+LexType_constchar.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_constchar extends LexType_const {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.CONSTCHAR;
+    }
+}
+LexType_constint.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_constint extends LexType_const {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.CONSTINT;
+    }
+}
+LexType_conststr.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_conststr extends LexType_const {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.CONSTSTR;
+    }
+}
+LexType_def.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_def extends LexType_keyword {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.DEF;
+    }
+}
+LexType_else.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_else extends LexType_keyword {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.ELSE;
+    }
+}
+LexType_equal.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_equal extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.EQUAL;
+    }
+}
+LexType_id.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_id extends LexType {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.ID;
+    }
+}
+LexType_if.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_if extends LexType_keyword {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.IF;
+    }
+}
+LexType_keyword.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public abstract class LexType_keyword extends LexType {
+}
+LexType_less.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_less extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.LESS;
+    }
+}
+LexType_minus.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_minus extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.MINUS;
+    }
+}
+LexType_none.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_none extends LexType {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.NONE;
+    }
+}
+LexType_not.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_not extends LexType_keyword {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.NOT;
+    }
+}
+LexType_plus.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_plus extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.PLUS;
+    }
+}
+LexType_quote1.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_quote1 extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.QUOTE1;
+    }
+}
+LexType_quote2.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_quote2 extends LexType_symb {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.QUOTE2;
+    }
+}
+LexType_return.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public class LexType_return extends LexType_keyword {
+    public LexTypeEnum getType(){
+        return LexTypeEnum.RETURN;
+    }
+}
+LexType_symb.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+public abstract class LexType_symb extends LexType {
+}
+Token.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+public class Token {
+    private LexType lexType;
+    private int row;
+    private int col;
+    private String value;
+
+    @Override
+    public String toString(){
+        return "["+row+","+col+"]["+lexType.getType()+"]"+(value==null?"":" -> ["+value+"]");
+    }
+
+    public void generateCompileException(String errMsg) throws CompileException {
+        new TokenInvalid(this, errMsg).throwCompileException();
+    }
+}
+TokenInvalid.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.lexical;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.Getter;
+
+@Getter
+public class TokenInvalid extends Token {
+    private Token real;
+    private String errMsg;
+
+    public TokenInvalid(Token real, String errMsg) {
+        super(real.getLexType(), real.getRow(), real.getCol(), real.getValue());
+        this.real = real;
+        this.errMsg = errMsg;
+    }
+
+    public TokenInvalid(LexFabric lexFabric, int row, int col, String value, String errMsg) {
+        super(lexFabric.getLexType(LexTypeEnum.NONE), row, col, value);
+        this.errMsg = errMsg;
+    }
+
+    public void throwCompileException() throws CompileException {
+        throw new CompileException(this);
+    }
+
+    @Override
+    public String toString(){
+        return "["+getRow()+","+getCol()+"]["+getLexType().getType()+".INVALID]"+(getValue()==null?"":" -> ["+getValue()+"]")+(errMsg==null?"":" // "+errMsg);
+    }
+}
+PythonCompiler.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import edu.kpi.io8322.sysprog.lab.lexical.LexicalAnalyzer;
+import edu.kpi.io8322.sysprog.lab.syntax.SyntaxAnalyzer;
+import lombok.Getter;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+public class PythonCompiler {
+    public static final String NAME_PRG = "[5-20-Java-IO-83-Omelyanskyi] ";
+    private static final String LOG_FORMAT = NAME_PRG+"[%1$-10s] [%2$-7s] %3$s";
+    public static PythonCompiler app;
+
+    private String srcname;
+    private String dstname;
+    private List<String> srclines;
+    private LexicalAnalyzer lexicalAnalyzer;
+    private SyntaxAnalyzer syntaxAnalyzer;
+
+    public PythonCompiler(String srcname) {
+        this.srcname = srcname;
+        if (srcname.endsWith(".py")) {
+            dstname = srcname.substring(0, srcname.length() - ".py".length()) + ".asm";
+        } else {
+            dstname = srcname + ".asm";
+        }
+    }
+
+    public int exec() {
+        logInfo(null, null, "Source file: " + srcname);
+        srclines = new ArrayList<>();
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(srcname));
+            String line = br.readLine();
+            while (line != null) {
+                srclines.add(line);
+                line = br.readLine();
+            }
+            br.close();
+            logInfo(null, null, "Read " + srclines.size() + " rows.");
+        } catch (Throwable e) {
+            logError(null, null, "Error read file " + srcname);
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (Throwable e1) {
+                }
+            }
+            return 1;
+        }
+        lexicalAnalyzer = new LexicalAnalyzer(srclines);
+        try {
+            lexicalAnalyzer.exec();
+            lexicalAnalyzer.printTokenList();;
+        } catch(CompileException e){
+            lexicalAnalyzer.printTokenList();;
+            logError("Lexical", null, e.toString());
+            return 1;
+        }
+        syntaxAnalyzer = new SyntaxAnalyzer(lexicalAnalyzer.getTokenList());
+        try {
+            syntaxAnalyzer.exec();
+            syntaxAnalyzer.printTree();
+        } catch(CompileException e){
+            syntaxAnalyzer.printTree();
+            logError("Syntax", null, e.toString());
+            return 1;
+        }
+        try {
+            logInfo(null, null, "Generate destination files");
+            StringWriter stringWriter = new StringWriter();
+            BufferedWriter writer = new BufferedWriter(stringWriter);
+            syntaxAnalyzer.execOut(writer);
+            writer.close();
+            String bodyResultFile = new String(stringWriter.getBuffer());
+            BufferedWriter writerFile = new BufferedWriter(new FileWriter(dstname));
+            writerFile.write(bodyResultFile);
+            writerFile.close();
+        } catch (Throwable e){
+            logError("Generator", null, e.toString());
+            return 1;
+        }
+        logInfo(null, null, "Result file: " + dstname);
+        return 0;
+    }
+
+    public void logInfo(String sourceClass, String sourceMethod, String msg) {
+        if (sourceClass == null) {
+            System.out.println(String.format(LOG_FORMAT, "Compiler", "INFO", msg));
+        } else {
+            System.out.println(String.format(LOG_FORMAT, sourceClass, "INFO", msg));
+        }
+    }
+
+    public void logError(String sourceClass, String sourceMethod, String msg) {
+        if (sourceClass == null) {
+            System.out.println(String.format(LOG_FORMAT, "Compiler", "ERROR", msg));
+        } else {
+            System.out.println(String.format(LOG_FORMAT, sourceClass, "ERROR", msg));
+        }
+    }
+
+    public static void main(String[] argc) {
+        if (argc.length < 1) {
+            System.out.println("Usage: PythonCompiler <source_file>");
+            System.out.println();
+            System.exit(1);
+        }
+        PythonCompiler.app = new PythonCompiler(argc[0]);
+        long timeexec = System.currentTimeMillis();
+        PythonCompiler.app.logInfo(null, null, "Python compiler");
+        int exitcode = PythonCompiler.app.exec();
+        switch (exitcode) {
+            case 0:
+                PythonCompiler.app.logInfo(null, null, "Python Compiler finished OK. [ " + (System.currentTimeMillis() - timeexec) + " ms]");
+                break;
+            default:
+                PythonCompiler.app.logError(null, null, "Python Compiler finished ERROR. [ " + (System.currentTimeMillis() - timeexec) + " ms]");
+                break;
+        }
+        System.exit(exitcode);
+    }
+}
+
+
+Env.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Env {
+    private static int SEQ_ID = 1;
+    private List<Expr_IdVar> varList;
+    protected int memOffsetPos;
+    protected Env prev;
+    protected Stmt_Function functionCur;
+    private int id;
+    private int level;
+
+    public Env(Env prev, Stmt_Function functionCur) {
+        this.id = SEQ_ID;
+        SEQ_ID++;
+        memOffsetPos = 0;
+        this.prev = prev;
+        this.functionCur = functionCur;
+        if (prev == null) {
+            level = 1;
+        } else {
+            level = prev.getLevel() + 1;
+        }
+        varList = new ArrayList<>();
+    }
+
+    public Env getPrev() {
+        return prev;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public int calcSubLevel(Env env) throws CompileException {
+        if (env.getId() == id) return 0;
+        if (prev == null) throw new CompileException(1, 0, "Error calc sublevel env.", null);
+        return prev.calcSubLevel(env) + 1;
+    }
+
+    public void putVar(Expr_IdVar node) {
+        varList.add(node);
+        if(node.getType()!=NodeType.EXPR_IDVARFUNC) {
+            memOffsetPos += 4;
+            node.setMemOffset(memOffsetPos);
+        }
+    }
+
+    public Expr_IdVar getVar(String key) {
+        for (Expr_IdVar node : varList) {
+            if (node.getName().equals(key)) return node;
+        }
+        if (prev != null) return prev.getVar(key);
+        return null;
+    }
+
+    public int getMemBlockSize() {
+        return memOffsetPos;
+    }
+
+    public void genAllocMem(SyntaxAnalyzer prg) throws CompileException, IOException {
+        if (getMemBlockSize() > 0) {
+            prg.outWriteln("\tpush ebp");
+            prg.outWriteln("\tmov ebp,esp");
+            prg.outWriteln("\tsub esp," + getMemBlockSize());
+        }
+    }
+
+    public void genFreeMem(SyntaxAnalyzer prg, Env envCur) throws CompileException, IOException {
+        if (getMemBlockSize() > 0) {
+            prg.outWriteln("\tmov esp,ebp");
+            prg.outWriteln("\tpop ebp");
+        }
+    }
+
+}
+Expr.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+
+import java.io.IOException;
+
+public abstract class Expr extends Node {
+    public Expr(int row, int col) {
+        super(row, col);
+    }
+
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        throw new CompileException(getRow(), getCol(), "outPushValue not support.", null);
+    }
+}
+Expr_Binary.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import lombok.Getter;
+
+@Getter
+public abstract class Expr_Binary extends Expr {
+    private Expr expr1;
+    private Expr expr2;
+    public Expr_Binary(int row, int col, Expr expr1, Expr expr2){
+        super(row, col);
+        this.expr1 = expr1;
+        this.expr2 = expr2;
+    }
+
+    public void printTree(StringBuilder buf, String indent){
+        buf.append(indent+"["+getType()+"]: "+System.lineSeparator());
+        buf.append(indent+"  {expr1}:"+System.lineSeparator());
+        getExpr1().printTree(buf, indent+"    ");
+        buf.append(indent+"  {expr2}:"+System.lineSeparator());
+        getExpr2().printTree(buf, indent+"    ");
+    }
+
+}
+Expr_BinaryLess.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+
+import java.io.IOException;
+
+public class Expr_BinaryLess extends Expr_Binary {
+    public Expr_BinaryLess(int row, int col, Expr expr1, Expr expr2){
+        super(row, col, expr1, expr2);
+    }
+
+    public NodeType getType(){
+        return NodeType.EXPR_BINARYLESS;
+    }
+
+    @Override
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        prg.outWriteln("\tpush edx");
+        getExpr1().outPushValue(prg);
+        getExpr2().outPushValue(prg);
+        prg.outWriteln("\tpop edx");
+        prg.outWriteln("\tpop eax");
+        int labelTrue = prg.newLabel();
+        prg.outWriteln("\tcmp eax,edx");
+        prg.outWriteln("\tpop edx");
+        prg.outWriteln("\tjl " + prg.strLabel(labelTrue));
+        int labelAfter = prg.newLabel();
+        prg.outWriteln("\tpush dword ptr 0");
+        prg.outWriteln("\tjmp " + prg.strLabel(labelAfter));
+        prg.outWriteLabel(labelTrue);
+        prg.outWriteln("\tpush dword ptr 1");
+        prg.outWriteLabel(labelAfter);
+    }
+}
+Expr_BinaryMinus.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+
+import java.io.IOException;
+
+public class Expr_BinaryMinus extends Expr_Binary {
+    public Expr_BinaryMinus(int row, int col, Expr expr1, Expr expr2){
+        super(row, col, expr1, expr2);
+    }
+
+    public NodeType getType(){
+        return NodeType.EXPR_BINARYMINUS;
+    }
+
+    @Override
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        prg.outWriteln("\tpush edx");
+        getExpr1().outPushValue(prg);
+        getExpr2().outPushValue(prg);
+        prg.outWriteln("\tpop edx");
+        prg.outWriteln("\tpop eax");
+        prg.outWriteln("\tsub eax,edx");
+        prg.outWriteln("\tpop edx");
+        prg.outWriteln("\tpush eax");;
+    }
+
+}
+Expr_BinaryPlus.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+
+import java.io.IOException;
+
+public class Expr_BinaryPlus extends Expr_Binary {
+    public Expr_BinaryPlus(int row, int col, Expr expr1, Expr expr2){
+        super(row, col, expr1, expr2);
+    }
+
+    public NodeType getType(){
+        return NodeType.EXPR_BINARYPLUS;
+    }
+
+    @Override
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        prg.outWriteln("\tpush edx");
+        getExpr1().outPushValue(prg);
+        getExpr2().outPushValue(prg);
+        prg.outWriteln("\tpop edx");
+        prg.outWriteln("\tpop eax");
+        prg.outWriteln("\tadd eax,edx");
+        prg.outWriteln("\tpop edx");
+        prg.outWriteln("\tpush eax");;
+    }
+
+}
+Expr_Call.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.Getter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+public class Expr_Call extends Expr {
+    private Stmt_Function func;
+    private List<Expr> values;
+
+    public Expr_Call(int row, int col, Stmt_Function func){
+        super(row, col);
+        this.func = func;
+        values = new ArrayList<>();
+    }
+
+    public NodeType getType(){
+        return NodeType.EXPR_CALL;
+    }
+
+    public void printTree(StringBuilder buf, String indent){
+        buf.append(indent+"["+getType()+"]: "+System.lineSeparator());
+        buf.append(indent+"  {funcName}: \""+func.getName().getName()+"\""+System.lineSeparator());
+        if(!values.isEmpty()){
+            buf.append(indent+"  {values}: "+System.lineSeparator());
+            for(Expr value: values){
+                value.printTree(buf, indent+"    ");
+            }
+        }
+    }
+
+    @Override
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        prg.outWriteln("\tpush ebx");
+        prg.outWriteln("\tpush ecx");
+        prg.outWriteln("\tpush edx");
+        for(int i=values.size()-1;i>=0;i--){
+            values.get(i).outPushValue(prg);
+        }
+        prg.outWriteln("\tcall "+func.getName().getName());
+        prg.outWriteln("\tmov eax,ebx");
+        prg.outWriteln("\tpop edx");
+        prg.outWriteln("\tpop ecx");
+        prg.outWriteln("\tpop ebx");
+        prg.outWriteln("\tpush eax");;
+    }
+}
+Expr_Const.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+public abstract class Expr_Const extends Expr {
+    public Expr_Const(int row, int col){
+        super(row, col);
+    }
+}
+Expr_ConstInt.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import edu.kpi.io8322.sysprog.lab.lexical.Token;
+import lombok.Getter;
+
+import java.io.IOException;
+
+@Getter
+public class Expr_ConstInt extends Expr_Const {
+    private int value;
+
+    public Expr_ConstInt(int row, int col, Token token) throws CompileException {
+        super(row, col);
+        switch (token.getLexType().getType()) {
+            case CONSTINT:
+            case CONSTSTR:
+                try {
+                    if (token.getValue().startsWith("0x")) {
+                        value = Integer.parseInt(token.getValue().substring(2), 16);
+                    } else {
+                        value = Integer.parseInt(token.getValue(), 10);
+                    }
+                } catch (Throwable e) {
+                    token.generateCompileException("Bad format number");
+                }
+                break;
+            case CONSTCHAR:
+                value = token.getValue().charAt(0);
+                break;
+            default:
+                token.generateCompileException("Not integer constant.");
+        }
+    }
+
+    public NodeType getType(){
+        return NodeType.EXPR_CONSTINT;
+    }
+
+    public void printTree(StringBuilder buf, String indent){
+        buf.append(indent+"["+getType()+"]: \""+value+"\""+System.lineSeparator());
+    }
+
+    @Override
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        prg.outWriteln("\tpush dword ptr "+value);
+    }
+}
+Expr_GetVarValue.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+
+import java.io.IOException;
+
+public class Expr_GetVarValue extends Expr {
+    private Expr_IdVar varName;
+
+    public Expr_GetVarValue(int row, int col, Expr_IdVar varName) {
+        super(row, col);
+        this.varName = varName;
+    }
+
+    public NodeType getType() {
+        return NodeType.EXPR_GETVARVALUE;
+    }
+
+    public void printTree(StringBuilder buf, String indent) {
+        buf.append(indent + "[" + getType() + "]: " + System.lineSeparator());
+        varName.printTree(buf, indent + "  ");
+    }
+
+    @Override
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        switch (varName.getType()) {
+            case EXPR_IDVARFUNC:
+                prg.outWriteln("\tmov eax,p_"+varName.getName());
+                break;
+            default:
+                prg.outWriteln("\tmov eax,[ebp-" + varName.getMemOffset() + "]");
+                break;
+        }
+        prg.outWriteln("\tpush eax");
+    }
+
+}
+Expr_Id.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import edu.kpi.io8322.sysprog.lab.lexical.LexTypeEnum;
+import edu.kpi.io8322.sysprog.lab.lexical.Token;
+import lombok.Getter;
+
+@Getter
+public abstract class Expr_Id extends Expr {
+    private String name;
+
+    public Expr_Id(Token token) throws CompileException {
+        super(token.getRow(), token.getCol());
+        if(token.getLexType().getType()!=LexTypeEnum.ID) token.generateCompileException("Token not identifier.");
+        this.name = token.getValue();
+    }
+
+    public void printTree(StringBuilder buf, String indent){
+        buf.append(indent+"["+getType()+"]: \""+name+"\""+System.lineSeparator());
+    }
+}
+Expr_IdFunction.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import edu.kpi.io8322.sysprog.lab.lexical.Token;
+
+public class Expr_IdFunction extends Expr_Id {
+    public Expr_IdFunction(Token token) throws CompileException {
+        super(token);
+    }
+
+    public NodeType getType(){
+        return NodeType.EXPR_IDFUNCTION;
+    }
+}
+Expr_IdVar.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import edu.kpi.io8322.sysprog.lab.lexical.Token;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.io.IOException;
+
+@Getter
+@Setter
+public class Expr_IdVar extends Expr_Id {
+    private int memOffset;
+    public Expr_IdVar(Token token) throws CompileException {
+        super(token);
+    }
+
+    public NodeType getType(){
+        return NodeType.EXPR_IDVAR;
+    }
+
+    public void genSave(SyntaxAnalyzer prg) throws CompileException, IOException {
+        prg.outWriteln("\tpop eax");
+        prg.outWriteln("\tmov [ebp-"+memOffset+"],eax");
+    }
+}
+Expr_IdVarFunc.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import edu.kpi.io8322.sysprog.lab.lexical.Token;
+
+import java.io.IOException;
+
+public class Expr_IdVarFunc extends Expr_IdVar {
+    public Expr_IdVarFunc(Token token) throws CompileException {
+        super(token);
+    }
+
+    public NodeType getType(){
+        return NodeType.EXPR_IDVARFUNC;
+    }
+
+    @Override
+    public void genSave(SyntaxAnalyzer prg) throws CompileException, IOException {
+        prg.outWriteln("\tpop eax");
+        prg.outWriteln("\tmov p_"+getName()+",eax");
+    }
+}
+Expr_Ternary.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+
+import java.io.IOException;
+
+public class Expr_Ternary extends Expr {
+    private Expr ifTrue;
+    private Expr cond;
+    private Expr ifFalse;
+
+    public Expr_Ternary(int row, int col, Expr ifTrue, Expr cond, Expr ifFalse) {
+        super(row, col);
+        this.ifTrue = ifTrue;
+        this.cond = cond;
+        this.ifFalse = ifFalse;
+    }
+
+    public NodeType getType() {
+        return NodeType.EXPR_TERNARY;
+    }
+
+    public void printTree(StringBuilder buf, String indent) {
+        buf.append(indent + "[" + getType() + "]: " + System.lineSeparator());
+        buf.append(indent + "  {ifTrue}:" + System.lineSeparator());
+        ifTrue.printTree(buf, indent + "    ");
+        buf.append(indent + "  {cond}:" + System.lineSeparator());
+        cond.printTree(buf, indent + "    ");
+        buf.append(indent + "  {ifFalse}:" + System.lineSeparator());
+        ifFalse.printTree(buf, indent + "    ");
+    }
+
+    @Override
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        cond.outPushValue(prg);
+        prg.outWriteln("\tpop eax");
+        int labelFalse = prg.newLabel();
+        prg.outWriteln("\tcmp eax,0");
+        prg.outWriteln("\tje " + prg.strLabel(labelFalse));
+        ifTrue.outPushValue(prg);
+        int labelAfter = prg.newLabel();
+        prg.outWriteln("\tjmp " + prg.strLabel(labelAfter));
+        prg.outWriteLabel(labelFalse);
+        ifFalse.outPushValue(prg);
+        prg.outWriteLabel(labelAfter);
+    }
+}
+Expr_Unary.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import lombok.Getter;
+
+@Getter
+public abstract class Expr_Unary extends Expr {
+    private Expr expr;
+    public Expr_Unary(int row, int col, Expr expr){
+        super(row, col);
+        this.expr = expr;
+    }
+}
+Expr_UnaryNot.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+
+import java.io.IOException;
+
+public class Expr_UnaryNot extends Expr_Unary {
+    public Expr_UnaryNot(int row, int col, Expr expr){
+        super(row, col, expr);
+    }
+
+    public NodeType getType(){
+        return NodeType.EXPR_UNARYNOT;
+    }
+
+    public void printTree(StringBuilder buf, String indent){
+        buf.append(indent+"["+getType()+"]: "+System.lineSeparator());
+        getExpr().printTree(buf, indent+"  ");
+    }
+
+    @Override
+    public void outPushValue(SyntaxAnalyzer prg) throws CompileException, IOException {
+        getExpr().outPushValue(prg);
+        prg.outWriteln("\tpop eax");
+        int labelTrue = prg.newLabel();
+        prg.outWriteln("\tcmp eax,0");
+        prg.outWriteln("\tje "+prg.strLabel(labelTrue));
+        int labelAfter = prg.newLabel();
+        prg.outWriteln("\tpush dword ptr 0");
+        prg.outWriteln("\tjmp "+prg.strLabel(labelAfter));
+        prg.outWriteLabel(labelTrue);
+        prg.outWriteln("\tpush dword ptr 1");
+        prg.outWriteLabel(labelAfter);
+    }
+
+}
+Node.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import lombok.Getter;
+
+@Getter
+public abstract class Node {
+    private int row;
+    private int col;
+
+    public Node(int row, int col) {
+        this.row = row;
+        this.col = col;
+    }
+
+    public abstract NodeType getType();
+
+    public abstract void printTree(StringBuilder buf, String indent);
+}
+NodeType.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+public enum NodeType {
+    NONE, EXPR, EXPR_CONST, EXPR_CONSTINT, EXPR_ID, EXPR_IDFUNCTION, EXPR_IDVAR,
+    STMT, STMT_RETURN, STMT_BLOCK, STMT_FUNCTION, STMT_PROGRAM,
+    EXPR_UNARY, EXPR_BINARY, EXPR_UNARYNOT, EXPR_BINARYPLUS,
+    EXPR_BINARYMINUS, EXPR_BINARYLESS, STMT_SET, STMT_SEQ, EXPR_GETVARVALUE,
+    EXPR_TERNARY,
+    EXPR_IDVARFUNC, EXPR_CALL
+}
+Stmt.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+
+import java.io.IOException;
+
+public abstract class Stmt extends Node {
+    public Stmt(int row, int col) {
+        super(row, col);
+    }
+
+    public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
+    }
+}
+Stmt_Block.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.io.IOException;
+
+@Getter
+@Setter
+public class Stmt_Block extends Stmt {
+    private Stmt_Seq body;
+    private String blockIndent;
+
+    public Stmt_Block(int row, int col, String blockIndent) {
+        super(row, col);
+        this.blockIndent = blockIndent;
+    }
+
+    public NodeType getType(){
+        return NodeType.STMT_BLOCK;
+    }
+
+    public void printTree(StringBuilder buf, String indent){
+        buf.append(indent+"["+getType()+"]"+System.lineSeparator());
+        if(body!=null){
+            buf.append(indent+"  {bodyBlock}:"+System.lineSeparator());
+            body.printTree(buf, indent+"    ");
+        }
+    }
+
+    @Override
+    public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
+        if(body!=null){
+            int labelBlockBegin = prg.newLabel();
+            int labelBlockAfter = prg.newLabel();
+            prg.outWriteLabel(labelBlockBegin);
+            body.gen(prg, labelBlockBegin, labelBlockAfter);
+            prg.outWriteLabel(labelBlockAfter);
+        }
+    }
+
+}
+Stmt_Function.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+public class Stmt_Function extends Stmt {
+    private Env env;
+    private Expr_IdFunction name;
+    private List<Expr_IdVarFunc> params;
+    private Stmt_Block body;
+    private String blockIndent;
+
+    public Stmt_Function(int row, int col, Expr_IdFunction name, String blockIndent) {
+        super(row, col);
+        this.name = name;
+        this.blockIndent = blockIndent;
+        params = new ArrayList<>();
+    }
+
+    public NodeType getType() {
+        return NodeType.STMT_FUNCTION;
+    }
+
+    public void printTree(StringBuilder buf, String indent) {
+        buf.append(indent + "[" + getType() + "]" + System.lineSeparator());
+        buf.append(indent + "  {nameFunction}:" + System.lineSeparator());
+        name.printTree(buf, indent+"    ");
+        if(!params.isEmpty()){
+            buf.append(indent + "  {params}:" + System.lineSeparator());
+            for(Expr_IdVarFunc param: params) {
+                param.printTree(buf, indent+"    ");
+            }
+        }
+        if (body != null) {
+            buf.append(indent + "  {bodyFunction}:" + System.lineSeparator());
+            body.printTree(buf, indent+"    ");
+        }
+    }
+
+    @Override
+    public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
+        StringBuilder sb = new StringBuilder(name.getName()+" PROC");
+        if(!params.isEmpty()){
+            sb.append(" p_"+params.get(0).getName()+":DWORD");
+            for(int i=1;i<params.size();i++){
+                sb.append(",p_"+params.get(i).getName()+":DWORD");
+            }
+        }
+        prg.outWriteln(sb.toString());
+        if(body!=null){
+            env.genAllocMem(prg);
+            body.gen(prg, 0, 0);
+            env.genFreeMem(prg, env);
+        }
+        prg.outWriteln(name.getName()+" ENDP");
+    }
+}
+Stmt_Program.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+public class Stmt_Program extends Stmt {
+    private List<Stmt_Function> functionList;
+
+    public Stmt_Program() {
+        super(1, 1);
+        functionList = new ArrayList<>();
+    }
+
+    public NodeType getType() {
+        return NodeType.STMT_PROGRAM;
+    }
+
+    public Stmt_Function findFunction(String name) {
+        for(Stmt_Function stmtFunction: functionList){
+            if(stmtFunction.getName().getName().equals(name)){
+                return stmtFunction;
+            }
+        }
+        return null;
+    }
+
+    public void printTree(StringBuilder buf, String indent) {
+        buf.append(indent + "[" + getType() + "]" + System.lineSeparator());
+        for (Stmt_Function stmtFunction : functionList) {
+            buf.append(indent + "  {function}:" + System.lineSeparator());
+            stmtFunction.printTree(buf, indent+"    ");
+        }
+    }
+
+    @Override
+    public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
+        prg.outWriteln(".586");
+        prg.outWriteln(".model flat, stdcall");
+        prg.outWriteln("option casemap:none");
+        prg.outWriteln("include \\masm32\\include\\windows.inc");
+        prg.outWriteln("include \\masm32\\include\\kernel32.inc");
+        prg.outWriteln("include \\masm32\\include\\masm32.inc");
+        prg.outWriteln("includelib \\masm32\\lib\\kernel32.lib");
+        prg.outWriteln("includelib \\masm32\\lib\\masm32.lib");
+        prg.outWriteln("NumbToStr PROTO :DWORD,:DWORD");
+        for (Stmt_Function stmtFunction : functionList) {
+            StringBuilder sb = new StringBuilder(stmtFunction.getName().getName() + " PROTO");
+            if (!stmtFunction.getParams().isEmpty()) {
+                sb.append(" :DWORD");
+                for (int i = 1; i < stmtFunction.getParams().size(); i++) {
+                    sb.append(",:DWORD");
+                }
+            }
+            prg.outWriteln(sb.toString());
+        }
+        prg.outWriteln(".data");
+        prg.outWriteln("\tbuff db 11 dup(?)");
+        prg.outWriteln(".code");
+        prg.outWriteln("start:");
+        prg.outWriteln("\tinvoke main");
+        prg.outWriteln("\tinvoke NumbToStr, ebx, ADDR buff");
+        prg.outWriteln("\tinvoke StdOut,eax");
+        prg.outWriteln("\tinvoke ExitProcess,0");
+        for (Stmt_Function stmtFunction : functionList) {
+            stmtFunction.gen(prg, 0, 0);
+        }
+        prg.outWriteln("NumbToStr PROC uses ebx x:DWORD,buffer:DWORD");
+        prg.outWriteln("\tmov ecx,buffer");
+        prg.outWriteln("\tmov eax,x");
+        prg.outWriteln("\tmov ebx,10");
+        prg.outWriteln("\tadd ecx,ebx");
+        prg.outWriteln("LL1:");
+        prg.outWriteln("\txor edx,edx");
+        prg.outWriteln("\tdiv ebx");
+        prg.outWriteln("\tadd edx,48");
+        prg.outWriteln("\tmov BYTE PTR [ecx],dl");
+        prg.outWriteln("\tdec ecx");
+        prg.outWriteln("\ttest eax,eax");
+        prg.outWriteln("\tjnz LL1");
+        prg.outWriteln("\tinc ecx");
+        prg.outWriteln("\tmov eax,ecx");
+        prg.outWriteln("\tret");
+        prg.outWriteln("NumbToStr ENDP");
+        prg.outWriteln("end start");
+    }
+
+}
+Stmt_Return.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.Getter;
+
+import java.io.IOException;
+
+@Getter
+public class Stmt_Return extends Stmt {
+    private Stmt_Function stmtFunction;
+    private Expr retValue;
+
+    public Stmt_Return(int row, int col, Stmt_Function stmtFunction, Expr retValue) {
+        super(row, col);
+        this.stmtFunction = stmtFunction;
+        this.retValue = retValue;
+    }
+
+    public NodeType getType(){
+        return NodeType.STMT_RETURN;
+    }
+
+    public void printTree(StringBuilder buf, String indent){
+        buf.append(indent+"["+getType()+"]"+System.lineSeparator());
+        buf.append(indent+"  {retValue}:"+System.lineSeparator());
+        retValue.printTree(buf, indent+"    ");
+    }
+
+    @Override
+    public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
+        retValue.outPushValue(prg);
+        prg.outWriteln("\tpop ebx");
+        stmtFunction.getEnv().genFreeMem(prg, stmtFunction.getEnv());
+        prg.outWriteln("\tret");
+    }
+
+}
+Stmt_Seq.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.Getter;
+
+import java.io.IOException;
+
+@Getter
+public class Stmt_Seq extends Stmt {
+    private Stmt stmt1;
+    private Stmt stmt2;
+
+    public Stmt_Seq(int row, int col, Stmt stmt1, Stmt stmt2) {
+        super(row, col);
+        this.stmt1 = stmt1;
+        this.stmt2 = stmt2;
+    }
+
+    public NodeType getType(){
+        return NodeType.STMT_SEQ;
+    }
+
+    public void printTree(StringBuilder buf, String indent){
+        buf.append(indent+"["+getType()+"]"+System.lineSeparator());
+        if(stmt1!=null) {
+            buf.append(indent + "  {stmt1}:" + System.lineSeparator());
+            stmt1.printTree(buf, indent+"    ");
+        }
+        if(stmt2!=null) {
+            buf.append(indent + "  {stmt2}:" + System.lineSeparator());
+            stmt2.printTree(buf, indent+"    ");
+        }
+    }
+
+    @Override
+    public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
+        if(stmt1!=null) stmt1.gen(prg, labelBegin, labelAfter);
+        if(stmt2!=null) stmt2.gen(prg, labelBegin, labelAfter);
+    }
+}
+Stmt_Set.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import lombok.Getter;
+
+import java.io.IOException;
+
+@Getter
+public class Stmt_Set extends Stmt {
+    private Expr_IdVar varName;
+    private Expr varValue;
+
+    public Stmt_Set(int row, int col, Expr_IdVar varName, Expr varValue) {
+        super(row, col);
+        this.varName = varName;
+        this.varValue = varValue;
+    }
+
+    public NodeType getType(){
+        return NodeType.STMT_SET;
+    }
+
+    public void printTree(StringBuilder buf, String indent){
+        buf.append(indent+"["+getType()+"]"+System.lineSeparator());
+        if(varName!=null) {
+            buf.append(indent + "  {varName}:" + System.lineSeparator());
+            varName.printTree(buf, indent+"    ");
+        }
+        buf.append(indent + "  {varValue}:" + System.lineSeparator());
+        varValue.printTree(buf, indent+"    ");
+    }
+
+    @Override
+    public void gen(SyntaxAnalyzer prg, int labelBegin, int labelAfter) throws CompileException, IOException {
+        varValue.outPushValue(prg);
+        if(varName==null){
+            prg.outWriteln("\tpop eax");
+        } else {
+            varName.genSave(prg);
+        }
+    }
+}
+SyntaxAnalyzer.java
+======================================================================
+package edu.kpi.io8322.sysprog.lab.syntax;
+
+import edu.kpi.io8322.sysprog.lab.PythonCompiler;
+import edu.kpi.io8322.sysprog.lab.core.CompileException;
+import edu.kpi.io8322.sysprog.lab.lexical.LexTypeEnum;
+import edu.kpi.io8322.sysprog.lab.lexical.Token;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+
+public class SyntaxAnalyzer {
+    private List<Token> tokenList;
+    private Stmt_Program root;
+    private int tokenIndexCur;
+    private Stmt_Function functionCur;
+    private Deque<Stmt_Block> blockStack;
+    private int labelIndexCur;
+    private Writer out;
+    private Env env;
+
+    public SyntaxAnalyzer(List<Token> tokenList) {
+        this.tokenList = tokenList;
+    }
+
+    public Stmt_Program getRoot() {
+        return root;
+    }
+
+    public Token tokenCur() throws CompileException {
+        if (tokenIndexCur < tokenList.size())
+            return tokenList.get(tokenIndexCur);
+        throw new CompileException(1, 1, "Attempt to parse past end of file.", null);
+    }
+
+    public Token tokenPeek(int step) {
+        if (tokenIndexCur + step < tokenList.size())
+            return tokenList.get(tokenIndexCur + step);
+        return null;
+    }
+
+    public void tokenNext() {
+        tokenIndexCur++;
+    }
+
+    public Env newEnv() {
+        env = new Env(env, functionCur);
+        return env;
+    }
+
+    public Env restorePrevEnv() {
+        env = env.getPrev();
+        return env;
+    }
+
+    public void exec() throws CompileException {
+        PythonCompiler.app.logInfo(null, null, "Syntax analyzer starting.");
+        tokenIndexCur = 0;
+        functionCur = null;
+        blockStack = new ArrayDeque<>();
+        env = null;
+        root = new Stmt_Program();
+        if (tokenCur().getLexType().getType() != LexTypeEnum.BLOCKINDENT)
+            tokenCur().generateCompileException("Token not block indent.");
+        while (tokenPeek(0) != null) {
+            parseFunction();
+        }
+        Stmt_Function func_main = root.findFunction("main");
+        if (func_main == null) {
+            throw new CompileException(1, 1, "Function main() not defined.", null);
+        }
+        if (!func_main.getParams().isEmpty()) {
+            throw new CompileException(1, 1, "Function main() not allowed params.", null);
+        }
+        PythonCompiler.app.logInfo(null, null, "Syntax analyzer finished OK.");
+    }
+
+    public Stmt_Function parseFunction() throws CompileException {
+        if (tokenCur().getLexType().getType() != LexTypeEnum.BLOCKINDENT)
+            tokenCur().generateCompileException("Token not block indent.");
+        String blockIndent = tokenCur().getValue();
+        tokenNext();
+        Token tokenDef = tokenCur();
+        if (tokenDef.getLexType().getType() != LexTypeEnum.DEF)
+            tokenDef.generateCompileException("Token not keyword \"def\".");
+        tokenNext();
+        Expr_IdFunction nameFunction = new Expr_IdFunction(tokenCur());
+        if (root.findFunction(nameFunction.getName()) != null)
+            tokenCur().generateCompileException("Function with name \"" + nameFunction.getName() + "\" already defined.");
+        Stmt_Function stmtFunction = new Stmt_Function(tokenDef.getRow(), tokenDef.getCol(), nameFunction, blockIndent);
+        root.getFunctionList().add(stmtFunction);
+        functionCur = stmtFunction;
+        blockStack.clear();
+        stmtFunction.setEnv(newEnv());
+        tokenNext();
+        if (tokenCur().getLexType().getType() != LexTypeEnum.BKTB)
+            tokenCur().generateCompileException("Not symbol \"(\".");
+        tokenNext();
+        parseFunctionParams();
+        if (tokenCur().getLexType().getType() != LexTypeEnum.COLON)
+            tokenCur().generateCompileException("Not symbol \":\".");
+        tokenNext();
+        stmtFunction.setBody(parseBlock());
+        functionCur = null;
+        blockStack.clear();
+        restorePrevEnv();
+        return stmtFunction;
+    }
+
+    public void parseFunctionParams() throws CompileException {
+        switch (tokenCur().getLexType().getType()) {
+            case BKTE:
+                tokenNext();
+                return;
+            case ID:
+                if (functionCur.getEnv().getVar(tokenCur().getValue()) != null)
+                    tokenCur().generateCompileException("Dublicate paramname.");
+                Expr_IdVarFunc param = new Expr_IdVarFunc(tokenCur());
+                functionCur.getParams().add(param);
+                functionCur.getEnv().putVar(param);
+                tokenNext();
+                if (tokenCur().getLexType().getType() == LexTypeEnum.COMMA) {
+                    tokenNext();
+                    parseFunctionParams();
+                    return;
+                }
+                if (tokenCur().getLexType().getType() == LexTypeEnum.BKTE) {
+                    tokenNext();
+                    return;
+                }
+                tokenCur().generateCompileException("Symbol not \",\" or \")\".");
+        }
+        tokenCur().generateCompileException("Token not paramname or \")\".");
+    }
+
+    public Stmt_Block parseBlock() throws CompileException {
+        if (tokenCur().getLexType().getType() != LexTypeEnum.BLOCKINDENT)
+            tokenCur().generateCompileException("Token not block indent.");
+        Stmt_Block stmt_block = new Stmt_Block(tokenCur().getRow(), tokenCur().getCol(), tokenCur().getValue());
+        blockStack.addFirst(stmt_block);
+        stmt_block.setBody(parseSeq(stmt_block.getBlockIndent()));
+        blockStack.removeFirst();
+        return stmt_block;
+    }
+
+    public Stmt_Seq parseSeq(String blockIndent) throws CompileException {
+        if (tokenPeek(0) == null) return null;
+        while (tokenCur().getLexType().getType()==LexTypeEnum.BLOCKINDENT && tokenPeek(1)!=null && tokenPeek(1).getLexType().getType()==LexTypeEnum.BLOCKINDENT){
+            tokenNext();;
+        }
+        if (tokenCur().getLexType().getType() != LexTypeEnum.BLOCKINDENT)
+            tokenCur().generateCompileException("Token not block indent.");
+        if (tokenPeek(1)==null || !tokenCur().getValue().equals(blockIndent)) return null;
+        tokenNext();
+        return new Stmt_Seq(tokenCur().getRow(), tokenCur().getCol(), parseStmt(), parseSeq(blockIndent));
+    }
+
+    public Stmt parseStmt() throws CompileException {
+        if (tokenCur().getLexType().getType() == LexTypeEnum.RETURN) return parseReturn();
+        if (tokenCur().getLexType().getType() == LexTypeEnum.ID) return parseIdLeft();
+        tokenCur().generateCompileException("Token not statement.");
+        return null;
+    }
+
+    public Stmt parseReturn() throws CompileException {
+        Token tokenReturn = tokenCur();
+        if (functionCur == null) tokenReturn.generateCompileException("Return without function.");
+        tokenNext();
+        return new Stmt_Return(tokenReturn.getRow(), tokenReturn.getCol(), functionCur, parseExpr());
+    }
+
+    public Stmt parseIdLeft() throws CompileException {
+        Token tokenId = tokenCur();
+        if (tokenPeek(1) == null) tokenId.generateCompileException("Not found symbol \"=\".");
+        boolean varIsNew = false;
+        Expr_IdVar varName = env.getVar(tokenId.getValue());
+        if (varName == null) {
+            varName = new Expr_IdVar(tokenId);
+            env.putVar(varName);
+            varIsNew = true;
+        }
+        tokenNext();
+        switch (tokenCur().getLexType().getType()) {
+            case EQUAL:
+                tokenNext();
+                return new Stmt_Set(tokenId.getRow(), tokenId.getCol(), varName, parseExpr());
+            case PLUS:
+                if (tokenPeek(1) == null || tokenPeek(1).getLexType().getType() != LexTypeEnum.EQUAL) {
+                    tokenCur().generateCompileException("Not found \"+=\".");
+                }
+                if (varIsNew) {
+                    tokenId.generateCompileException("Variable \"" + tokenId.getValue() + "\" not found.");
+                }
+                tokenNext();
+                tokenNext();
+                Expr_BinaryPlus expr = new Expr_BinaryPlus(tokenCur().getRow(), tokenCur().getCol(), new Expr_GetVarValue(tokenCur().getRow(), tokenCur().getCol(), varName), parseExpr());
+                return new Stmt_Set(tokenId.getRow(), tokenId.getCol(), varName, expr);
+        }
+        tokenCur().generateCompileException("Symbol not \"=\" or \"+=\".");
+        return null;
+    }
+
+    public Expr parseTerm() throws CompileException {
+        if (tokenCur().getLexType().getType() == LexTypeEnum.BKTB) {
+            tokenNext();
+            Expr expr = parseExpr();
+            if (tokenCur().getLexType().getType() != LexTypeEnum.BKTE)
+                tokenCur().generateCompileException("Token not \")\".");
+            tokenNext();
+            return expr;
+        }
+        if (tokenCur().getLexType().getType() == LexTypeEnum.QUOTE1 || tokenCur().getLexType().getType() == LexTypeEnum.QUOTE2) {
+            Token quoteBegin = tokenCur();
+            tokenNext();
+            Expr_ConstInt expr = new Expr_ConstInt(tokenCur().getRow(), tokenCur().getCol(), tokenCur());
+            tokenNext();
+            if (tokenCur().getLexType().getType() != quoteBegin.getLexType().getType())
+                tokenCur().generateCompileException("Not close quote.");
+            tokenNext();
+            return expr;
+        }
+        if (tokenCur().getLexType().getType() == LexTypeEnum.CONSTINT) {
+            Expr_ConstInt expr = new Expr_ConstInt(tokenCur().getRow(), tokenCur().getCol(), tokenCur());
+            tokenNext();
+            return expr;
+        }
+        if (tokenCur().getLexType().getType() == LexTypeEnum.NOT) {
+            Token token_not = tokenCur();
+            tokenNext();
+            Expr expr = new Expr_UnaryNot(token_not.getRow(), token_not.getCol(), parseTerm());
+            return expr;
+        }
+        if (tokenCur().getLexType().getType() == LexTypeEnum.ID) {
+            if (tokenPeek(1) != null && tokenPeek(1).getLexType().getType() == LexTypeEnum.BKTB) {
+                Token tokenFuncName = tokenCur();
+                Stmt_Function func = root.findFunction(tokenFuncName.getValue());
+                if(func==null) tokenFuncName.generateCompileException("Function \""+tokenFuncName.getValue()+"\" not defined.");
+                tokenNext();
+                tokenNext();
+                Expr_Call expr = new Expr_Call(tokenFuncName.getRow(), tokenFuncName.getCol(), func);
+                parseCallParams(expr);
+                if(expr.getValues().size()!=func.getParams().size()){
+                    tokenFuncName.generateCompileException("Mismatch count function params: "+func.getParams().size()+"<>"+expr.getValues().size());
+                }
+                return expr;
+            } else {
+                Expr_IdVar varName = env.getVar(tokenCur().getValue());
+                if (varName == null)
+                    tokenCur().generateCompileException("Variable \"" + tokenCur().getValue() + "\" not defined.");
+                Expr expr = new Expr_GetVarValue(tokenCur().getRow(), tokenCur().getCol(), varName);
+                tokenNext();
+                return expr;
+            }
+        }
+        tokenCur().generateCompileException("Token not expression.");
+        throw new RuntimeException();
+    }
+
+    public void parseCallParams(Expr_Call exprCall) throws CompileException {
+        if(tokenCur().getLexType().getType()==LexTypeEnum.BKTE) {
+            tokenNext();
+            return;
+        }
+        exprCall.getValues().add(parseExpr());
+        if(tokenCur().getLexType().getType()==LexTypeEnum.COMMA){
+            tokenNext();
+            parseCallParams(exprCall);
+            return;
+        }
+        if(tokenCur().getLexType().getType()==LexTypeEnum.BKTE){
+            tokenNext();
+            return;
+        }
+        tokenCur().generateCompileException("Symbol not \")\" or \",\".");
+    }
+
+    public Expr parseExpr() throws CompileException {
+        Expr expr1 = parseExprPrior2();
+        if (tokenPeek(0) != null) {
+            if (tokenCur().getLexType().getType() == LexTypeEnum.IF) {
+                tokenNext();
+                Expr cond = parseExprPrior2();
+                if (tokenCur().getLexType().getType() != LexTypeEnum.ELSE)
+                    tokenCur().generateCompileException("Token not \"else\".");
+                tokenNext();
+                Expr expr = new Expr_Ternary(expr1.getRow(), expr1.getCol(), expr1, cond, parseExpr());
+                return expr;
+            }
+        }
+        return expr1;
+    }
+
+    public Expr parseExprPrior2() throws CompileException {
+        Expr expr1 = parseExprPrior3();
+        if (tokenPeek(0) != null) {
+            if (tokenCur().getLexType().getType() == LexTypeEnum.LESS) {
+                tokenNext();
+                Expr expr = new Expr_BinaryLess(expr1.getRow(), expr1.getCol(), expr1, parseExprPrior2());
+                return expr;
+            }
+        }
+        return expr1;
+    }
+
+    public Expr parseExprPrior3() throws CompileException {
+        Expr expr1 = parseTerm();
+        if (tokenPeek(0) != null) {
+            Expr expr = null;
+            if (tokenCur().getLexType().getType() == LexTypeEnum.PLUS) {
+                tokenNext();
+                expr = new Expr_BinaryPlus(expr1.getRow(), expr1.getCol(), expr1, parseTerm());
+            } else if (tokenCur().getLexType().getType() == LexTypeEnum.MINUS) {
+                tokenNext();
+                expr = new Expr_BinaryMinus(expr1.getRow(), expr1.getCol(), expr1, parseTerm());
+            }
+            if(expr!=null){
+                if(tokenPeek(0)==null) return expr;
+                switch(tokenCur().getLexType().getType()){
+                    case PLUS:
+                        tokenNext();
+                        return new Expr_BinaryPlus(expr.getRow(), expr.getCol(), expr, parseExprPrior3());
+                    case MINUS:
+                        tokenNext();
+                        return new Expr_BinaryMinus(expr.getRow(), expr.getCol(), expr, parseExprPrior3());
+                    default:
+                        return expr;
+                }
+            }
+        }
+        return expr1;
+    }
+
+    public void printTree() {
+        System.out.println(PythonCompiler.NAME_PRG+"SYNTAX TREE:");
+        System.out.println(PythonCompiler.NAME_PRG+"-----------------------------------------------");
+        StringBuilder bufPrint = new StringBuilder();
+        root.printTree(bufPrint, PythonCompiler.NAME_PRG+"");
+        System.out.println(bufPrint);
+        System.out.println(PythonCompiler.NAME_PRG+"-----------------------------------------------");
+    }
+
+    public int newLabel() {
+        labelIndexCur++;
+        return labelIndexCur;
+    }
+
+    public String strLabel(int num) {
+        if (num > 0) return "L" + num;
+        return null;
+    }
+
+    public void outWriteLabel(int num) throws IOException {
+        if (num > 0)
+            out.write("L" + num + ":" + System.lineSeparator());
+    }
+
+    public void outWriteln(String str) throws IOException {
+        if (str != null && !str.isEmpty()) out.write(str);
+        out.write(System.lineSeparator());
+    }
+
+    public void execOut(Writer out) throws CompileException, IOException {
+        this.out = out;
+        labelIndexCur = 0;
+        root.gen(this, 0, 0);
+    }
+
+}
